@@ -1,0 +1,19 @@
+# PyCharm
+/.idea
+
+# VS Code
+/.vscode/settings.json
+
+# Sphinx
+/doc/build
+
+# Python
+__pycache__
+*.pyc
+
+# macOS
+.DS_Store
+
+hyperparam_cfg_*.pt
+
+*.log

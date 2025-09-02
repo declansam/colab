@@ -1,0 +1,215 @@
+17:23:11   Random seed: 1024
+17:23:11   Config file: config/new_explain/fb15k237-pagelink-jub-p0-new.yaml
+17:23:11   Process ID: 1989663
+17:23:11   {'checkpoint': '/scratch/sl9030/gml/Graph-Transformer/NBFNet-PyG/checkpoint/explain/fb15k237_dist_eval.pth',
+ 'dataset': {'class': 'FB15k-237',
+             'root': '/scratch/sl9030/gml/Graph-Transformer/NBFNet-PyG/datasets/knowledge_graphs/'},
+ 'eval_checkpoint': '/scratch/sl9030/gml/Graph-Transformer/NBFNet-PyG/checkpoint/explain/fb15k237_dist_eval.pth',
+ 'explainer': {'alpha': 0.5,
+               'beta': 0.5,
+               'class': 'PaGELink',
+               'counter_factual': False,
+               'ego_network': True,
+               'factual': True,
+               'k_core': 3,
+               'num_paths': 2,
+               'prune_graph': True,
+               'prune_max_degree': 30,
+               'timeout_duration': 3,
+               'topk_tails': 1,
+               'use_default_aggr': False,
+               'with_path_loss': True},
+ 'explainer_eval': {'eval_mask_type': 'hard_edge_mask_top_k',
+                    'eval_type': ['factual_eval'],
+                    'hard_edge_mask_top_k': [25, 50, 75, 100, 300, 500, 1000]},
+ 'model': {'aggregate_func': 'pna',
+           'class': 'NBFNet',
+           'dependent': True,
+           'hidden_dims': [32, 32, 32, 32, 32, 32],
+           'input_dim': 32,
+           'layer_norm': True,
+           'message_func': 'distmult',
+           'remove_one_hop': True,
+           'short_cut': True,
+           'use_pyg_propagation': True},
+ 'num_partitions': 2,
+ 'optimizer': {'class': 'Adam', 'lr': 0.01},
+ 'output_dir': '/scratch/sl9030/gml/Graph-Transformer/NBFNet-PyG/explanation/PaGELink/',
+ 'partition_id': 0,
+ 'save_explanation': True,
+ 'task': {'adversarial_temperature': 0.5,
+          'metric': ['mr',
+                     'mrr',
+                     'hits@1',
+                     'hits@3',
+                     'hits@10',
+                     'inclusion',
+                     'num_edges',
+                     'num_nodes'],
+          'num_negative': 32,
+          'strict_negative': True},
+ 'train': {'batch_size': 8,
+           'gpus': [0],
+           'log_interval': 100,
+           'num_epoch': 4,
+           'num_workers': 4,
+           'step': 1},
+ 'valid_walltime': 20,
+ 'wandb': {'entity': 'team_ryoji',
+           'name': 'PaGELink-Jubail-p0',
+           'project': 'SampleX-FB15k-237',
+           'use': False}}
+17:23:11   FB15k-237 dataset
+17:23:11   #train: 272115, #valid: 17535, #test: 20466
+17:23:13   >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+17:23:13   Evaluate on valid with hard_edge_mask_top_k
+00:19:45   >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+00:19:45   mr_factual_eval_hard_edge_mask_top_k_25: 11213
+00:19:45   mrr_factual_eval_hard_edge_mask_top_k_25: 0.167087
+00:19:45   hits@1_factual_eval_hard_edge_mask_top_k_25: 0.138572
+00:19:45   hits@3_factual_eval_hard_edge_mask_top_k_25: 0.192917
+00:19:45   hits@10_factual_eval_hard_edge_mask_top_k_25: 0.208485
+00:19:45   inclusion_factual_eval_hard_edge_mask_top_k_25: 0.214758
+00:19:45   num_edges_factual_eval_hard_edge_mask_top_k_25: 15.8279
+00:19:45   num_nodes_factual_eval_hard_edge_mask_top_k_25: 13.1703
+00:19:45   >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+00:19:45   mr_factual_eval_hard_edge_mask_top_k_50: 11182.6
+00:19:45   mrr_factual_eval_hard_edge_mask_top_k_50: 0.164176
+00:19:45   hits@1_factual_eval_hard_edge_mask_top_k_50: 0.135322
+00:19:45   hits@3_factual_eval_hard_edge_mask_top_k_50: 0.189211
+00:19:45   hits@10_factual_eval_hard_edge_mask_top_k_50: 0.208428
+00:19:45   inclusion_factual_eval_hard_edge_mask_top_k_50: 0.217324
+00:19:45   num_edges_factual_eval_hard_edge_mask_top_k_50: 25.3854
+00:19:45   num_nodes_factual_eval_hard_edge_mask_top_k_50: 20.1649
+00:19:45   >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+00:19:45   mr_factual_eval_hard_edge_mask_top_k_75: 11172.2
+00:19:45   mrr_factual_eval_hard_edge_mask_top_k_75: 0.163326
+00:19:45   hits@1_factual_eval_hard_edge_mask_top_k_75: 0.134409
+00:19:45   hits@3_factual_eval_hard_edge_mask_top_k_75: 0.187899
+00:19:45   hits@10_factual_eval_hard_edge_mask_top_k_75: 0.207345
+00:19:45   inclusion_factual_eval_hard_edge_mask_top_k_75: 0.218294
+00:19:45   num_edges_factual_eval_hard_edge_mask_top_k_75: 32.5291
+00:19:45   num_nodes_factual_eval_hard_edge_mask_top_k_75: 25.3363
+00:19:45   >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+00:19:46   mr_factual_eval_hard_edge_mask_top_k_100: 11164
+00:19:46   mrr_factual_eval_hard_edge_mask_top_k_100: 0.163041
+00:19:46   hits@1_factual_eval_hard_edge_mask_top_k_100: 0.134238
+00:19:46   hits@3_factual_eval_hard_edge_mask_top_k_100: 0.187671
+00:19:46   hits@10_factual_eval_hard_edge_mask_top_k_100: 0.20706
+00:19:46   inclusion_factual_eval_hard_edge_mask_top_k_100: 0.219206
+00:19:46   num_edges_factual_eval_hard_edge_mask_top_k_100: 37.6657
+00:19:46   num_nodes_factual_eval_hard_edge_mask_top_k_100: 29.0614
+00:19:46   >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+00:19:46   mr_factual_eval_hard_edge_mask_top_k_300: 11150.7
+00:19:46   mrr_factual_eval_hard_edge_mask_top_k_300: 0.163017
+00:19:46   hits@1_factual_eval_hard_edge_mask_top_k_300: 0.134238
+00:19:46   hits@3_factual_eval_hard_edge_mask_top_k_300: 0.187386
+00:19:46   hits@10_factual_eval_hard_edge_mask_top_k_300: 0.206946
+00:19:46   inclusion_factual_eval_hard_edge_mask_top_k_300: 0.220119
+00:19:46   num_edges_factual_eval_hard_edge_mask_top_k_300: 40.8784
+00:19:46   num_nodes_factual_eval_hard_edge_mask_top_k_300: 31.4662
+00:19:46   >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+00:19:46   mr_factual_eval_hard_edge_mask_top_k_500: 11150.7
+00:19:46   mrr_factual_eval_hard_edge_mask_top_k_500: 0.163017
+00:19:46   hits@1_factual_eval_hard_edge_mask_top_k_500: 0.134238
+00:19:46   hits@3_factual_eval_hard_edge_mask_top_k_500: 0.187386
+00:19:46   hits@10_factual_eval_hard_edge_mask_top_k_500: 0.206946
+00:19:46   inclusion_factual_eval_hard_edge_mask_top_k_500: 0.220119
+00:19:46   num_edges_factual_eval_hard_edge_mask_top_k_500: 40.8784
+00:19:46   num_nodes_factual_eval_hard_edge_mask_top_k_500: 31.4662
+00:19:46   >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+00:19:46   mr_factual_eval_hard_edge_mask_top_k_1000: 11150.7
+00:19:46   mrr_factual_eval_hard_edge_mask_top_k_1000: 0.163017
+00:19:46   hits@1_factual_eval_hard_edge_mask_top_k_1000: 0.134238
+00:19:46   hits@3_factual_eval_hard_edge_mask_top_k_1000: 0.187386
+00:19:46   hits@10_factual_eval_hard_edge_mask_top_k_1000: 0.206946
+00:19:46   inclusion_factual_eval_hard_edge_mask_top_k_1000: 0.220119
+00:19:46   num_edges_factual_eval_hard_edge_mask_top_k_1000: 40.8784
+00:19:46   num_nodes_factual_eval_hard_edge_mask_top_k_1000: 31.4662
+00:19:46   >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+00:19:46   average_mr_factual_eval: 11169.1
+00:19:46   average_mrr_factual_eval: 0.163812
+00:19:46   average_hits@1_factual_eval: 0.135036
+00:19:46   average_hits@3_factual_eval: 0.188551
+00:19:46   average_hits@10_factual_eval: 0.207451
+00:19:46   average_inclusion_factual_eval: 0.218563
+00:19:46   average_num_edges_factual_eval: 33.4347
+00:19:46   average_num_nodes_factual_eval: 26.0188
+00:19:46   >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+00:19:46   Execution time for inference on valid: 24993.6 seconds
+00:19:46   >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+00:19:46   Evaluate on test with hard_edge_mask_top_k
+08:36:09   >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+08:36:09   mr_factual_eval_hard_edge_mask_top_k_25: 11239.9
+08:36:09   mrr_factual_eval_hard_edge_mask_top_k_25: 0.165293
+08:36:09   hits@1_factual_eval_hard_edge_mask_top_k_25: 0.137545
+08:36:09   hits@3_factual_eval_hard_edge_mask_top_k_25: 0.190267
+08:36:09   hits@10_factual_eval_hard_edge_mask_top_k_25: 0.207368
+08:36:09   inclusion_factual_eval_hard_edge_mask_top_k_25: 0.213867
+08:36:09   num_edges_factual_eval_hard_edge_mask_top_k_25: 15.8383
+08:36:09   num_nodes_factual_eval_hard_edge_mask_top_k_25: 13.1836
+08:36:09   >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+08:36:09   mr_factual_eval_hard_edge_mask_top_k_50: 11207.1
+08:36:09   mrr_factual_eval_hard_edge_mask_top_k_50: 0.16278
+08:36:09   hits@1_factual_eval_hard_edge_mask_top_k_50: 0.134565
+08:36:09   hits@3_factual_eval_hard_edge_mask_top_k_50: 0.186895
+08:36:09   hits@10_factual_eval_hard_edge_mask_top_k_50: 0.206733
+08:36:09   inclusion_factual_eval_hard_edge_mask_top_k_50: 0.21631
+08:36:09   num_edges_factual_eval_hard_edge_mask_top_k_50: 25.3893
+08:36:09   num_nodes_factual_eval_hard_edge_mask_top_k_50: 20.1964
+08:36:09   >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+08:36:09   mr_factual_eval_hard_edge_mask_top_k_75: 11192.9
+08:36:09   mrr_factual_eval_hard_edge_mask_top_k_75: 0.161871
+08:36:09   hits@1_factual_eval_hard_edge_mask_top_k_75: 0.133832
+08:36:09   hits@3_factual_eval_hard_edge_mask_top_k_75: 0.185429
+08:36:09   hits@10_factual_eval_hard_edge_mask_top_k_75: 0.206049
+08:36:09   inclusion_factual_eval_hard_edge_mask_top_k_75: 0.217434
+08:36:09   num_edges_factual_eval_hard_edge_mask_top_k_75: 32.4007
+08:36:09   num_nodes_factual_eval_hard_edge_mask_top_k_75: 25.2779
+08:36:09   >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+08:36:09   mr_factual_eval_hard_edge_mask_top_k_100: 11185.1
+08:36:09   mrr_factual_eval_hard_edge_mask_top_k_100: 0.16163
+08:36:09   hits@1_factual_eval_hard_edge_mask_top_k_100: 0.133685
+08:36:09   hits@3_factual_eval_hard_edge_mask_top_k_100: 0.184843
+08:36:09   hits@10_factual_eval_hard_edge_mask_top_k_100: 0.205805
+08:36:09   inclusion_factual_eval_hard_edge_mask_top_k_100: 0.218167
+08:36:09   num_edges_factual_eval_hard_edge_mask_top_k_100: 37.0257
+08:36:09   num_nodes_factual_eval_hard_edge_mask_top_k_100: 28.6545
+08:36:09   >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+08:36:09   mr_factual_eval_hard_edge_mask_top_k_300: 11180.2
+08:36:09   mrr_factual_eval_hard_edge_mask_top_k_300: 0.161438
+08:36:09   hits@1_factual_eval_hard_edge_mask_top_k_300: 0.13349
+08:36:09   hits@3_factual_eval_hard_edge_mask_top_k_300: 0.18455
+08:36:09   hits@10_factual_eval_hard_edge_mask_top_k_300: 0.205512
+08:36:09   inclusion_factual_eval_hard_edge_mask_top_k_300: 0.218606
+08:36:09   num_edges_factual_eval_hard_edge_mask_top_k_300: 39.1934
+08:36:09   num_nodes_factual_eval_hard_edge_mask_top_k_300: 30.2844
+08:36:09   >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+08:36:09   mr_factual_eval_hard_edge_mask_top_k_500: 11180.2
+08:36:09   mrr_factual_eval_hard_edge_mask_top_k_500: 0.161438
+08:36:09   hits@1_factual_eval_hard_edge_mask_top_k_500: 0.13349
+08:36:09   hits@3_factual_eval_hard_edge_mask_top_k_500: 0.18455
+08:36:09   hits@10_factual_eval_hard_edge_mask_top_k_500: 0.205512
+08:36:09   inclusion_factual_eval_hard_edge_mask_top_k_500: 0.218606
+08:36:09   num_edges_factual_eval_hard_edge_mask_top_k_500: 39.1934
+08:36:09   num_nodes_factual_eval_hard_edge_mask_top_k_500: 30.2844
+08:36:09   >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+08:36:10   mr_factual_eval_hard_edge_mask_top_k_1000: 11180.2
+08:36:10   mrr_factual_eval_hard_edge_mask_top_k_1000: 0.161438
+08:36:10   hits@1_factual_eval_hard_edge_mask_top_k_1000: 0.13349
+08:36:10   hits@3_factual_eval_hard_edge_mask_top_k_1000: 0.18455
+08:36:10   hits@10_factual_eval_hard_edge_mask_top_k_1000: 0.205512
+08:36:10   inclusion_factual_eval_hard_edge_mask_top_k_1000: 0.218606
+08:36:10   num_edges_factual_eval_hard_edge_mask_top_k_1000: 39.1934
+08:36:10   num_nodes_factual_eval_hard_edge_mask_top_k_1000: 30.2844
+08:36:10   >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+08:36:10   average_mr_factual_eval: 11195.1
+08:36:10   average_mrr_factual_eval: 0.16227
+08:36:10   average_hits@1_factual_eval: 0.134299
+08:36:10   average_hits@3_factual_eval: 0.185869
+08:36:10   average_hits@10_factual_eval: 0.20607
+08:36:10   average_inclusion_factual_eval: 0.217371
+08:36:10   average_num_edges_factual_eval: 32.6049
+08:36:10   average_num_nodes_factual_eval: 25.4522
+08:36:10   >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+08:36:10   Execution time for inference on test: 29783.5 seconds

@@ -1,0 +1,70 @@
+output_dir: /storage/ryoji/Graph-Transformer/NBFNet-PyG/explanation/PaGELink/
+
+dataset:
+  class: FB15k-237
+  root:  /storage/ryoji/Graph-Transformer/NBFNet-PyG/datasets/knowledge_graphs/
+
+wandb:
+  use: {{use_wandb}}
+  entity: "team_ryoji"
+  project: SampleX-FB15k-237
+  name: PaGELink-Jubail-p0
+
+model:
+  class: NBFNet
+  input_dim: 32
+  hidden_dims: [32, 32, 32, 32, 32, 32]
+  message_func: distmult
+  aggregate_func: pna
+  short_cut: yes
+  layer_norm: yes
+  dependent: yes
+  remove_one_hop: yes
+  use_pyg_propagation: yes
+
+explainer:
+  class: PaGELink
+  prune_graph: yes
+  with_path_loss: yes
+  timeout_duration: 3
+  topk_tails: 1
+  prune_max_degree: 30
+  k_core: 3
+  num_paths: 2
+  alpha: 0.5
+  beta: 0.5
+  ego_network: yes
+  use_default_aggr: no
+  factual: yes
+  counter_factual: no
+
+explainer_eval: # the evaluation of the explainers
+  eval_mask_type: hard_edge_mask_top_k
+  hard_edge_mask_top_k: [25, 50, 75, 100, 300, 500, 1000]
+  eval_type: [factual_eval]
+
+task:
+  num_negative: 32
+  strict_negative: yes
+  adversarial_temperature: 0.5
+  metric: [mr, mrr, hits@1, hits@3, hits@10, inclusion, num_edges, num_nodes]
+
+optimizer:
+  class: Adam
+  lr: 0.01
+
+train:
+  gpus: {{gpus}}
+  batch_size: 1
+  num_epoch: 4
+  log_interval: 100
+  num_workers: 4
+  step: 1
+
+checkpoint: /storage/ryoji/Graph-Transformer/NBFNet-PyG/checkpoint/explain/fb15k237_dist_eval.pth
+eval_checkpoint: /storage/ryoji/Graph-Transformer/NBFNet-PyG/checkpoint/explain/fb15k237_dist_eval.pth
+
+save_explanation: yes
+valid_walltime: 20
+num_partitions: 2
+partition_id: 0

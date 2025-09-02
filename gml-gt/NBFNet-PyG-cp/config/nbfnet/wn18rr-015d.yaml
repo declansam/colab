@@ -1,0 +1,52 @@
+output_dir: /storage/ryoji/Graph-Transformer/NBFNet-PyG/experiments/
+# output_dir: /scratch/rk3570/Graph-Transformer/NBFNet-PyG/experiments/
+
+dataset:
+  class: WN18RR
+  root: /storage/ryoji/Graph-Transformer/NBFNet-PyG/datasets/knowledge_graphs/
+  # root: /scratch/rk3570/Graph-Transformer/NBFNet-PyG/datasets/knowledge_graphs/
+
+wandb:
+  use: {{ use_wandb }}
+  entity: "team_ryoji"
+  project: SampleX-WN18RR
+  name: NBFNet-0.15d
+
+model:
+  class: NBFNet
+  input_dim: 32
+  hidden_dims: [32, 32, 32, 32, 32, 32]
+  message_func: distmult
+  aggregate_func: pna
+  short_cut: yes
+  layer_norm: yes
+  dependent: no
+  distance_dropout: yes
+  max_dropout_distance: 10
+  randomized_edge_drop: 0.15
+  use_pyg_propagation: yes
+
+task:
+  num_negative: 32
+  strict_negative: yes
+  adversarial_temperature: 1
+  metric: [mr, mrr, hits@1, hits@3, hits@10]
+
+optimizer:
+  class: Adam
+  lr: 5.0e-3
+
+eval:
+  randomized_edge_drop: [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
+  eval_on_edge_drop: no
+  eval_on_distance_drop: yes
+  remove_ground_truth: no
+  keep_ground_truth: no
+  eval_on_train: no
+  save_topk: -1 # do not save topk
+
+train:
+  gpus: {{ gpus }}
+  batch_size: 16
+  num_epoch: 20
+  log_interval: 100

@@ -1,0 +1,69 @@
+output_dir: /scratch/rk3570/Graph-Transformer/NBFNet-PyG/explanation/PGExplainer/
+
+dataset:
+  class: WN18RR
+  root:  /scratch/rk3570/Graph-Transformer/NBFNet-PyG/datasets/knowledge_graphs/
+
+wandb:
+  use: {{use_wandb}}
+  entity: "team_ryoji"
+  project: SampleX-WN18RR
+  name: PGExplainer-Jubail
+
+model:
+  class: NBFNet
+  input_dim: 32
+  hidden_dims: [32, 32, 32, 32, 32, 32]
+  message_func: distmult
+  aggregate_func: pna
+  short_cut: yes
+  layer_norm: yes
+  dependent: no
+  use_pyg_propagation: yes
+
+explainer:
+  class: PGExplainer
+  size_reg: 2
+  ent_reg: 4
+  temp_start: 4
+  temp_end: 3
+  sample_bias: 0.5
+  num_mlp_layer: 3
+  topk_tails: 1
+  ego_network: yes
+  use_default_aggr: no
+  mode: inductive
+  factual: yes
+  counter_factual: no
+
+explainer_eval: # the evaluation of the explainers
+  eval_mask_type: hard_edge_mask_top_k
+  hard_edge_mask_top_k: [10, 25, 50, 75, 100, 300, 500, 1000]
+  eval_type: [factual_eval]
+
+task:
+  num_negative: 32
+  strict_negative: yes
+  adversarial_temperature: 1
+  metric: [mr, mrr, hits@1, hits@3, hits@10, inclusion, num_edges, num_nodes]
+
+optimizer:
+  class: Adam
+  lr: 0.001
+
+train:
+  gpus: {{gpus}}
+  batch_size: 8
+  num_epoch: 0
+  log_interval: 100
+  num_workers: 4
+  step: 1
+  checkpoint_best: yes
+  train_on_val: yes
+
+checkpoint: /scratch/rk3570/Graph-Transformer/NBFNet-PyG/checkpoint/explain/wn18rr_dist_eval.pth
+eval_checkpoint: /scratch/rk3570/Graph-Transformer/NBFNet-PyG/checkpoint/explain/wn18rr_dist_eval.pth
+explainer_checkpoint: /scratch/rk3570/Graph-Transformer/NBFNet-PyG/explanation/PGExplainer/NBFNet/WN18RR/finetune_final/model_epoch_0.pth
+
+save_explanation: yes
+valid_walltime: 20

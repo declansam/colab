@@ -1,0 +1,61 @@
+output_dir: /storage/ryoji/Graph-Transformer/NBFNet-PyG/explanation/RandomWalk/
+
+dataset:
+  class: WN18RR
+  root:  /storage/ryoji/Graph-Transformer/NBFNet-PyG/datasets/knowledge_graphs/
+
+wandb:
+  use: {{use_wandb}}
+  entity: "team_ryoji"
+  project: SampleX-WN18RR
+  name: RandomWalk
+
+model:
+  class: NBFNet
+  input_dim: 32
+  hidden_dims: [32, 32, 32, 32, 32, 32]
+  message_func: distmult
+  aggregate_func: pna
+  short_cut: yes
+  layer_norm: yes
+  dependent: no
+  use_pyg_propagation: yes
+
+explainer:
+  class: RandomWalk
+  adj_aggr: max
+  teleport_prob: 0.2
+  topk_tails: 3
+  use_teleport_adj: yes
+  ego_network: no
+  factual: yes
+  counter_factual: no
+
+explainer_eval: # the evaluation of the explainers
+  eval_mask_type: hard_edge_mask_top_k
+  hard_edge_mask_top_k: [100, 300, 500, 1000, 5000, 10000]
+  eval_type: [factual_eval]
+
+task:
+  num_negative: 32
+  strict_negative: yes
+  adversarial_temperature: 1
+  metric: [mr, mrr, hits@1, hits@3, hits@10, inclusion, num_edges, num_nodes]
+
+optimizer:
+  class: Adam
+  lr: 5.0e-4
+
+train:
+  gpus: {{gpus}}
+  batch_size: 8
+  num_epoch: 0
+  log_interval: 100
+  num_workers: 4
+  step: 1
+
+checkpoint: /storage/ryoji/Graph-Transformer/NBFNet-PyG/checkpoint/explain/wn18rr_0b.pth
+eval_checkpoint: /storage/ryoji/Graph-Transformer/NBFNet-PyG/checkpoint/explain/wn18rr_015b.pth
+
+save_explanation: yes
+evaluate_on_train: yes

@@ -1,0 +1,48 @@
+output_dir: /storage/ryoji/Graph-Transformer/NBFNet-PyG/Hetero/
+
+dataset:
+  class: synthetic
+  root: /storage/ryoji/Graph-Transformer/NBFNet-PyG/datasets/hetero_dataset/
+
+wandb:
+  use: {{ use_wandb }}
+  entity: "team_ryoji"
+  project: SampleX-UserItemAttr
+  name: NBFNet-0.1b
+
+model:
+  class: NBFNet
+  input_dim: 32
+  hidden_dims: [32, 32, 32]
+  message_func: distmult
+  aggregate_func: pna
+  short_cut: yes
+  layer_norm: yes
+  dependent: yes
+  randomized_edge_drop: 0.1
+  use_pyg_propagation: yes
+
+task:
+  num_negative: 32
+  strict_negative: yes
+  adversarial_temperature: 0.5
+  metric: [mr, mrr, hits@1, hits@3, hits@10]
+
+eval:
+  randomized_edge_drop: [0, 0.2, 0.4, 0.6, 0.8, 1]
+  eval_on_edge_drop: no
+  remove_ground_truth: no
+  keep_ground_truth: no
+
+optimizer:
+  class: Adam
+  lr: 5.0e-3
+
+train:
+  gpus: {{ gpus }}
+  batch_size: 32
+  num_epoch: 100
+  log_interval: 100
+  step: 1
+
+# checkpoint: /storage/ryoji/Graph-Transformer/NBFNet-PyG/checkpoint/synthetic-nbfnet.pth

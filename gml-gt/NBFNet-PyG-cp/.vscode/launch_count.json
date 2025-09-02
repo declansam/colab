@@ -1,0 +1,26 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python Debugger: Current File with Arguments",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/script/count_component.py",
+            // "program": "${workspaceFolder}/script/format_explanation.py",
+            // "program": "${workspaceFolder}/script/global_explanation.py",
+            "console": "integratedTerminal",
+            // "args": ["-c","config/transductive/fb15k237-topk.yaml","--gpus","[1]","--file_name","/storage/ryoji/Graph-Transformer/NBFNet-PyG/sample_1.pt"],
+            // "args": ["-c","config/transductive/fb15k237-topk.yaml","--gpus","[1]"],
+            // "args": ["-c","config/transductive/wn18rr-kgsampling-pagelink.yaml","--gpus","[2]", "--use_wandb", "no"],
+            // "args": ["-c","config/nbfnet/wn18rr-2d.yaml","--gpus","[0]", "--use_wandb", "no", "--d", "2"],
+            // "args": ["-c","config/explain/wn18rr-rawexplainer-path.yaml","--gpus","[3]", "--use_wandb", "no"],
+            "args": ["-c","config/new_nbfnet/wn18rr-finetune-padding-ola.yaml","--gpus","[0]", "--use_wandb", "no", "--k", "100"],
+            // "args": ["-c","config/explain/wn18rr-powerlink-dev.yaml","--gpus","[3]", "--use_wandb", "no"],
+            // "args": ["-c","config/explain/wn18rr-randomwalk-benchmark.yaml","--gpus","[3]", "--use_wandb", "no"],
+            "justMyCode": true
+        }
+    ]
+}

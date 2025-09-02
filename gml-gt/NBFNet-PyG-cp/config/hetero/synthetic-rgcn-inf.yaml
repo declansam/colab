@@ -1,0 +1,41 @@
+output_dir: /storage/ryoji/Graph-Transformer/NBFNet-PyG/Hetero/
+# output_dir: /scratch/oge208/Graph-Transformer/NBFNet-PyG/Hetero/
+
+dataset:
+  class: synthetic
+  root: /storage/ryoji/Graph-Transformer/NBFNet-PyG/datasets/hetero_dataset/
+  # root: /scratch/oge208/Graph-Transformer/NBFNet-PyG/datasets/hetero_dataset/
+
+
+wandb:
+  use: {{ use_wandb }}
+  entity: "team_ryoji"
+  project: SampleX-UserItemAttr
+  name: RGCN
+
+model:
+  class: RGCN
+  input_dim: 128
+  hidden_dims: [128, 128]
+
+task:
+  sample_neg_edges: no
+  metric: [auroc]
+
+optimizer:
+  class: Adam
+  lr: 1.0e-3
+
+train:
+  gpus: {{ gpus }}
+  batch_size: 16
+  num_epoch: 0
+  log_interval: 100
+  step: 1
+
+eval:
+  # randomized_edge_drop: [0, 0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
+  randomized_edge_drop: [0, 0.5, 1]
+
+# checkpoint: /scratch/oge208/Graph-Transformer/NBFNet-PyG/checkpoint/synthetic.pth
+checkpoint: /storage/ryoji/Graph-Transformer/NBFNet-PyG/checkpoint/synthetic.pth

@@ -1,0 +1,37 @@
+# output_dir: /storage/ryoji/Graph-Transformer/NBFNet-PyG/Hetero/
+output_dir: /scratch/oge208/Graph-Transformer/NBFNet-PyG/Hetero/
+
+dataset:
+  class: aug_citation
+  # root: /storage/ryoji/Graph-Transformer/NBFNet-PyG/datasets/hetero_dataset/
+  root: /scratch/oge208/Graph-Transformer/NBFNet-PyG/datasets/hetero_dataset/
+
+
+wandb:
+  use: yes
+  entity: "team_ryoji"
+  project: SampleX-AugCitation
+  name: RGCN-NoNodeEmb2
+
+model:
+  class: RGCN
+  input_dim: 32
+  hidden_dims: [32, 32]
+  randomized_edge_drop: 0.0
+  use_node_emb: no
+  random_node_features: normal
+
+task:
+  sample_neg_edges: no
+  metric: [auroc]
+
+optimizer:
+  class: Adam
+  lr: 1.0e-2
+
+train:
+  gpus: [0,1]
+  batch_size: 16
+  num_epoch: 100
+  log_interval: 100
+  step: 1

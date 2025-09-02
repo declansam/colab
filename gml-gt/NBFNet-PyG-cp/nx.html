@@ -1,0 +1,444 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script>function neighbourhoodHighlight(params) {
+  // console.log("in nieghbourhoodhighlight");
+  allNodes = nodes.get({ returnType: "Object" });
+  // originalNodes = JSON.parse(JSON.stringify(allNodes));
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    highlightActive = true;
+    var i, j;
+    var selectedNode = params.nodes[0];
+    var degrees = 2;
+
+    // mark all nodes as hard to read.
+    for (let nodeId in allNodes) {
+      // nodeColors[nodeId] = allNodes[nodeId].color;
+      allNodes[nodeId].color = "rgba(200,200,200,0.5)";
+      if (allNodes[nodeId].hiddenLabel === undefined) {
+        allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+    var connectedNodes = network.getConnectedNodes(selectedNode);
+    var allConnectedNodes = [];
+
+    // get the second degree nodes
+    for (i = 1; i < degrees; i++) {
+      for (j = 0; j < connectedNodes.length; j++) {
+        allConnectedNodes = allConnectedNodes.concat(
+          network.getConnectedNodes(connectedNodes[j])
+        );
+      }
+    }
+
+    // all second degree nodes get a different color and their label back
+    for (i = 0; i < allConnectedNodes.length; i++) {
+      // allNodes[allConnectedNodes[i]].color = "pink";
+      allNodes[allConnectedNodes[i]].color = "rgba(150,150,150,0.75)";
+      if (allNodes[allConnectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[allConnectedNodes[i]].label =
+          allNodes[allConnectedNodes[i]].hiddenLabel;
+        allNodes[allConnectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // all first degree nodes get their own color and their label back
+    for (i = 0; i < connectedNodes.length; i++) {
+      // allNodes[connectedNodes[i]].color = undefined;
+      allNodes[connectedNodes[i]].color = nodeColors[connectedNodes[i]];
+      if (allNodes[connectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[connectedNodes[i]].label =
+          allNodes[connectedNodes[i]].hiddenLabel;
+        allNodes[connectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // the main node gets its own color and its label back.
+    // allNodes[selectedNode].color = undefined;
+    allNodes[selectedNode].color = nodeColors[selectedNode];
+    if (allNodes[selectedNode].hiddenLabel !== undefined) {
+      allNodes[selectedNode].label = allNodes[selectedNode].hiddenLabel;
+      allNodes[selectedNode].hiddenLabel = undefined;
+    }
+  } else if (highlightActive === true) {
+    // console.log("highlightActive was true");
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      // allNodes[nodeId].color = "purple";
+      allNodes[nodeId].color = nodeColors[nodeId];
+      // delete allNodes[nodeId].color;
+      if (allNodes[nodeId].hiddenLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+        allNodes[nodeId].hiddenLabel = undefined;
+      }
+    }
+    highlightActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    // console.log("Nothing was selected");
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        // allNodes[nodeId].color = {};
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function filterHighlight(params) {
+  allNodes = nodes.get({ returnType: "Object" });
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    filterActive = true;
+    let selectedNodes = params.nodes;
+
+    // hiding all nodes and saving the label
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = true;
+      if (allNodes[nodeId].savedLabel === undefined) {
+        allNodes[nodeId].savedLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+
+    for (let i=0; i < selectedNodes.length; i++) {
+      allNodes[selectedNodes[i]].hidden = false;
+      if (allNodes[selectedNodes[i]].savedLabel !== undefined) {
+        allNodes[selectedNodes[i]].label = allNodes[selectedNodes[i]].savedLabel;
+        allNodes[selectedNodes[i]].savedLabel = undefined;
+      }
+    }
+
+  } else if (filterActive === true) {
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = false;
+      if (allNodes[nodeId].savedLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].savedLabel;
+        allNodes[nodeId].savedLabel = undefined;
+      }
+    }
+    filterActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function selectNode(nodes) {
+  network.selectNodes(nodes);
+  neighbourhoodHighlight({ nodes: nodes });
+  return nodes;
+}
+
+function selectNodes(nodes) {
+  network.selectNodes(nodes);
+  filterHighlight({nodes: nodes});
+  return nodes;
+}
+
+function highlightFilter(filter) {
+  let selectedNodes = []
+  let selectedProp = filter['property']
+  if (filter['item'] === 'node') {
+    let allNodes = nodes.get({ returnType: "Object" });
+    for (let nodeId in allNodes) {
+      if (allNodes[nodeId][selectedProp] && filter['value'].includes((allNodes[nodeId][selectedProp]).toString())) {
+        selectedNodes.push(nodeId)
+      }
+    }
+  }
+  else if (filter['item'] === 'edge'){
+    let allEdges = edges.get({returnType: 'object'});
+    // check if the selected property exists for selected edge and select the nodes connected to the edge
+    for (let edge in allEdges) {
+      if (allEdges[edge][selectedProp] && filter['value'].includes((allEdges[edge][selectedProp]).toString())) {
+        selectedNodes.push(allEdges[edge]['from'])
+        selectedNodes.push(allEdges[edge]['to'])
+      }
+    }
+  }
+  selectNodes(selectedNodes)
+}</script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+            
+            
+            
+            
+            
+
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 750px;
+                 background-color: #222222;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+             #loadingBar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width: 100%;
+                 height: 750px;
+                 background-color:rgba(200,200,200,0.8);
+                 -webkit-transition: all 0.5s ease;
+                 -moz-transition: all 0.5s ease;
+                 -ms-transition: all 0.5s ease;
+                 -o-transition: all 0.5s ease;
+                 transition: all 0.5s ease;
+                 opacity:1;
+             }
+
+             #bar {
+                 position:absolute;
+                 top:0px;
+                 left:0px;
+                 width:20px;
+                 height:20px;
+                 margin:auto auto auto auto;
+                 border-radius:11px;
+                 border:2px solid rgba(30,30,30,0.05);
+                 background: rgb(0, 173, 246); /* Old browsers */
+                 box-shadow: 2px 0px 4px rgba(0,0,0,0.4);
+             }
+
+             #border {
+                 position:absolute;
+                 top:10px;
+                 left:10px;
+                 width:500px;
+                 height:23px;
+                 margin:auto auto auto auto;
+                 box-shadow: 0px 0px 4px rgba(0,0,0,0.2);
+                 border-radius:10px;
+             }
+
+             #text {
+                 position:absolute;
+                 top:8px;
+                 left:530px;
+                 width:30px;
+                 height:50px;
+                 margin:auto auto auto auto;
+                 font-size:22px;
+                 color: #000000;
+             }
+
+             div.outerBorder {
+                 position:relative;
+                 top:400px;
+                 width:600px;
+                 height:44px;
+                 margin:auto auto auto auto;
+                 border:8px solid rgba(0,0,0,0.1);
+                 background: rgb(252,252,252); /* Old browsers */
+                 background: -moz-linear-gradient(top,  rgba(252,252,252,1) 0%, rgba(237,237,237,1) 100%); /* FF3.6+ */
+                 background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(252,252,252,1)), color-stop(100%,rgba(237,237,237,1))); /* Chrome,Safari4+ */
+                 background: -webkit-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Chrome10+,Safari5.1+ */
+                 background: -o-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* Opera 11.10+ */
+                 background: -ms-linear-gradient(top,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* IE10+ */
+                 background: linear-gradient(to bottom,  rgba(252,252,252,1) 0%,rgba(237,237,237,1) 100%); /* W3C */
+                 filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#fcfcfc', endColorstr='#ededed',GradientType=0 ); /* IE6-9 */
+                 border-radius:72px;
+                 box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
+             }
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+            <div id="loadingBar">
+              <div class="outerBorder">
+                <div id="text">0%</div>
+                <div id="border">
+                  <div id="bar"></div>
+                </div>
+              </div>
+            </div>
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#97c2fc", "font": {"color": "white"}, "id": 40, "label": 40, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 11315, "label": 11315, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 11517, "label": 11517, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 40003, "label": 40003, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 4417, "label": 4417, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 286, "label": 286, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 7540, "label": 7540, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 35275, "label": 35275, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 40305, "label": 40305, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 853, "label": 853, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 26351, "label": 26351, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 10477, "label": 10477, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 39177, "label": 39177, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 1193, "label": 1193, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 6303, "label": 6303, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 8137, "label": 8137, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 11911, "label": 11911, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 17870, "label": 17870, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 25000, "label": 25000, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 32517, "label": 32517, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 32708, "label": 32708, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 39412, "label": 39412, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 9534, "label": 9534, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 39150, "label": 39150, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 1439, "label": 1439, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 7097, "label": 7097, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 10783, "label": 10783, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 12978, "label": 12978, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 14414, "label": 14414, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 18184, "label": 18184, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 19997, "label": 19997, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 23363, "label": 23363, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 25422, "label": 25422, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 27347, "label": 27347, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 33963, "label": 33963, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 35272, "label": 35272, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 35677, "label": 35677, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 36975, "label": 36975, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 37244, "label": 37244, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 37522, "label": 37522, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 37917, "label": 37917, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 38474, "label": 38474, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 39050, "label": 39050, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 39534, "label": 39534, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 1455, "label": 1455, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 10035, "label": 10035, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 16364, "label": 16364, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 38004, "label": 38004, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 18293, "label": 18293, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 25414, "label": 25414, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 25801, "label": 25801, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 25848, "label": 25848, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 30227, "label": 30227, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 33951, "label": 33951, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 1515, "label": 1515, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 22708, "label": 22708, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 28745, "label": 28745, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 1789, "label": 1789, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 35761, "label": 35761, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 40593, "label": 40593, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 30572, "label": 30572, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 20590, "label": 20590, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 2137, "label": 2137, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 23460, "label": 23460, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 23461, "label": 23461, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 29473, "label": 29473, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 2145, "label": 2145, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 2390, "label": 2390, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 14340, "label": 14340, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 35178, "label": 35178, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 37531, "label": 37531, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 39694, "label": 39694, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 39830, "label": 39830, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 2521, "label": 2521, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 29740, "label": 29740, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 34877, "label": 34877, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 2913, "label": 2913, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 39809, "label": 39809, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 28606, "label": 28606, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 3013, "label": 3013, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 5263, "label": 5263, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 3027, "label": 3027, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 20163, "label": 20163, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 4304, "label": 4304, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 7440, "label": 7440, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 17838, "label": 17838, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 29532, "label": 29532, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 5330, "label": 5330, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 21314, "label": 21314, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 35478, "label": 35478, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 5535, "label": 5535, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 19710, "label": 19710, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 24809, "label": 24809, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 26802, "label": 26802, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 34072, "label": 34072, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 32614, "label": 32614, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 6576, "label": 6576, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 6694, "label": 6694, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 7180, "label": 7180, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 17845, "label": 17845, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 18674, "label": 18674, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 26847, "label": 26847, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 9813, "label": 9813, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 38119, "label": 38119, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 7800, "label": 7800, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 26935, "label": 26935, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 7821, "label": 7821, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 12345, "label": 12345, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 36547, "label": 36547, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 7835, "label": 7835, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 19699, "label": 19699, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 2852, "label": 2852, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 10237, "label": 10237, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 21128, "label": 21128, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 28126, "label": 28126, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 31393, "label": 31393, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 35392, "label": 35392, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 35460, "label": 35460, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 39498, "label": 39498, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 8474, "label": 8474, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 27210, "label": 27210, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 8851, "label": 8851, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 8611, "label": 8611, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 10522, "label": 10522, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 16779, "label": 16779, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 17380, "label": 17380, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 24592, "label": 24592, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 40456, "label": 40456, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 3969, "label": 3969, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 30098, "label": 30098, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 29502, "label": 29502, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 10277, "label": 10277, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 10811, "label": 10811, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 36465, "label": 36465, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 11279, "label": 11279, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 39689, "label": 39689, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 11507, "label": 11507, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 26298, "label": 26298, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 11696, "label": 11696, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 12005, "label": 12005, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 12253, "label": 12253, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 33125, "label": 33125, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 40182, "label": 40182, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 12993, "label": 12993, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 19340, "label": 19340, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 13585, "label": 13585, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 11314, "label": 11314, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 14060, "label": 14060, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 23253, "label": 23253, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 15776, "label": 15776, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 18515, "label": 18515, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 32904, "label": 32904, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 15811, "label": 15811, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 18303, "label": 18303, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 16559, "label": 16559, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 16623, "label": 16623, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 24562, "label": 24562, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 27191, "label": 27191, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 31932, "label": 31932, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 34073, "label": 34073, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 33833, "label": 33833, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 19779, "label": 19779, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 19180, "label": 19180, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 10204, "label": 10204, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 11804, "label": 11804, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 32405, "label": 32405, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 34603, "label": 34603, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 38456, "label": 38456, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 17663, "label": 17663, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 1360, "label": 1360, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 27150, "label": 27150, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 18004, "label": 18004, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 18370, "label": 18370, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 18406, "label": 18406, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 40217, "label": 40217, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 18448, "label": 18448, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 36993, "label": 36993, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 19944, "label": 19944, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 24230, "label": 24230, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 20612, "label": 20612, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 22483, "label": 22483, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 6069, "label": 6069, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 22759, "label": 22759, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 29888, "label": 29888, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 24777, "label": 24777, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 2685, "label": 2685, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 27304, "label": 27304, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 32242, "label": 32242, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 34273, "label": 34273, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 36862, "label": 36862, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 1222, "label": 1222, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 2958, "label": 2958, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 3749, "label": 3749, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 6526, "label": 6526, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 6866, "label": 6866, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 8501, "label": 8501, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 8836, "label": 8836, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 12565, "label": 12565, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 13910, "label": 13910, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 16162, "label": 16162, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 23294, "label": 23294, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 23920, "label": 23920, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 25048, "label": 25048, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 28331, "label": 28331, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 29027, "label": 29027, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 31985, "label": 31985, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 36119, "label": 36119, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 36557, "label": 36557, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 36666, "label": 36666, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 39400, "label": 39400, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 36085, "label": 36085, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 38425, "label": 38425, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 37708, "label": 37708, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 37876, "label": 37876, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 38808, "label": 38808, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 20492, "label": 20492, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 1495, "label": 1495, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 4786, "label": 4786, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 13063, "label": 13063, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 15040, "label": 15040, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 20257, "label": 20257, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 21587, "label": 21587, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 26072, "label": 26072, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 32773, "label": 32773, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 34280, "label": 34280, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 34773, "label": 34773, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 35432, "label": 35432, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 36234, "label": 36234, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 37860, "label": 37860, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 38105, "label": 38105, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 38523, "label": 38523, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 38577, "label": 38577, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 38594, "label": 38594, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 38990, "label": 38990, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 39420, "label": 39420, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 39471, "label": 39471, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 1829, "label": 1829, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 8680, "label": 8680, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 11160, "label": 11160, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 12550, "label": 12550, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 17398, "label": 17398, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 23863, "label": 23863, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 29863, "label": 29863, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 38908, "label": 38908, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 5249, "label": 5249, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 2471, "label": 2471, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 5977, "label": 5977, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 10221, "label": 10221, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 10391, "label": 10391, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 14951, "label": 14951, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 16231, "label": 16231, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 16392, "label": 16392, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 22050, "label": 22050, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 22745, "label": 22745, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 38506, "label": 38506, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 38568, "label": 38568, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 38892, "label": 38892, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 39578, "label": 39578, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 39721, "label": 39721, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 30133, "label": 30133, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 3863, "label": 3863, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 37827, "label": 37827, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 5123, "label": 5123, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 10330, "label": 10330, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 22115, "label": 22115, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 26962, "label": 26962, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 29774, "label": 29774, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 6322, "label": 6322, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 20840, "label": 20840, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 23610, "label": 23610, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 23984, "label": 23984, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 25020, "label": 25020, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 27215, "label": 27215, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 29415, "label": 29415, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 29614, "label": 29614, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 32576, "label": 32576, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 37011, "label": 37011, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 36083, "label": 36083, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 6407, "label": 6407, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 35732, "label": 35732, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 7103, "label": 7103, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 8490, "label": 8490, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 37674, "label": 37674, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 9799, "label": 9799, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 28310, "label": 28310, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 39444, "label": 39444, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 16489, "label": 16489, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 20741, "label": 20741, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 19652, "label": 19652, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 20607, "label": 20607, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 28649, "label": 28649, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 30324, "label": 30324, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 20147, "label": 20147, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 8082, "label": 8082, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 25180, "label": 25180, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 26696, "label": 26696, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 29122, "label": 29122, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 18575, "label": 18575, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 27521, "label": 27521, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 30519, "label": 30519, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 31572, "label": 31572, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 22153, "label": 22153, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 31649, "label": 31649, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 34154, "label": 34154, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 32616, "label": 32616, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 2171, "label": 2171, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 33848, "label": 33848, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 34170, "label": 34170, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 36241, "label": 36241, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 2373, "label": 2373, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 34051, "label": 34051, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 40100, "label": 40100, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 35302, "label": 35302, "shape": "dot", "size": 10}, {"color": "#97c2fc", "font": {"color": "white"}, "id": 27775, "label": 27775, "shape": "dot", "size": 10}]);
+                  edges = new vis.DataSet([{"from": 40, "to": 11315, "width": 1}, {"from": 40, "to": 11517, "width": 1}, {"from": 40, "to": 40003, "width": 1}, {"from": 11315, "to": 4417, "width": 1}, {"from": 11315, "to": 11517, "width": 1}, {"from": 286, "to": 7540, "width": 1}, {"from": 286, "to": 35275, "width": 1}, {"from": 286, "to": 40305, "width": 1}, {"from": 7540, "to": 4417, "width": 1}, {"from": 35275, "to": 4417, "width": 1}, {"from": 853, "to": 26351, "width": 1}, {"from": 26351, "to": 10477, "width": 1}, {"from": 26351, "to": 39177, "width": 1}, {"from": 1193, "to": 6303, "width": 1}, {"from": 1193, "to": 8137, "width": 1}, {"from": 1193, "to": 11911, "width": 1}, {"from": 1193, "to": 17870, "width": 1}, {"from": 1193, "to": 25000, "width": 1}, {"from": 1193, "to": 32517, "width": 1}, {"from": 1193, "to": 32708, "width": 1}, {"from": 1193, "to": 39412, "width": 1}, {"from": 1193, "to": 9534, "width": 1}, {"from": 32708, "to": 4417, "width": 1}, {"from": 39412, "to": 39150, "width": 1}, {"from": 1439, "to": 4417, "width": 1}, {"from": 4417, "to": 7097, "width": 1}, {"from": 4417, "to": 10783, "width": 1}, {"from": 4417, "to": 12978, "width": 1}, {"from": 4417, "to": 14414, "width": 1}, {"from": 4417, "to": 18184, "width": 1}, {"from": 4417, "to": 19997, "width": 1}, {"from": 4417, "to": 23363, "width": 1}, {"from": 4417, "to": 25422, "width": 1}, {"from": 4417, "to": 27347, "width": 1}, {"from": 4417, "to": 33963, "width": 1}, {"from": 4417, "to": 35272, "width": 1}, {"from": 4417, "to": 35677, "width": 1}, {"from": 4417, "to": 36975, "width": 1}, {"from": 4417, "to": 37244, "width": 1}, {"from": 4417, "to": 37522, "width": 1}, {"from": 4417, "to": 37917, "width": 1}, {"from": 4417, "to": 38474, "width": 1}, {"from": 4417, "to": 39050, "width": 1}, {"from": 4417, "to": 39534, "width": 1}, {"from": 1455, "to": 10035, "width": 1}, {"from": 1455, "to": 16364, "width": 1}, {"from": 10035, "to": 38004, "width": 1}, {"from": 16364, "to": 9534, "width": 1}, {"from": 16364, "to": 18293, "width": 1}, {"from": 16364, "to": 25414, "width": 1}, {"from": 16364, "to": 25801, "width": 1}, {"from": 16364, "to": 25848, "width": 1}, {"from": 16364, "to": 30227, "width": 1}, {"from": 16364, "to": 33951, "width": 1}, {"from": 1515, "to": 4417, "width": 1}, {"from": 1515, "to": 22708, "width": 1}, {"from": 1515, "to": 28745, "width": 1}, {"from": 1789, "to": 18293, "width": 1}, {"from": 1789, "to": 25414, "width": 1}, {"from": 1789, "to": 35761, "width": 1}, {"from": 1789, "to": 40593, "width": 1}, {"from": 18293, "to": 30572, "width": 1}, {"from": 35761, "to": 20590, "width": 1}, {"from": 2137, "to": 23460, "width": 1}, {"from": 2137, "to": 23461, "width": 1}, {"from": 2137, "to": 29473, "width": 1}, {"from": 2145, "to": 22708, "width": 1}, {"from": 2390, "to": 14340, "width": 1}, {"from": 2390, "to": 35178, "width": 1}, {"from": 2390, "to": 37531, "width": 1}, {"from": 2390, "to": 39694, "width": 1}, {"from": 2390, "to": 39830, "width": 1}, {"from": 2390, "to": 9534, "width": 1}, {"from": 2521, "to": 26351, "width": 1}, {"from": 2521, "to": 29740, "width": 1}, {"from": 2521, "to": 34877, "width": 1}, {"from": 2913, "to": 39809, "width": 1}, {"from": 39809, "to": 28606, "width": 1}, {"from": 3013, "to": 25848, "width": 1}, {"from": 25848, "to": 5263, "width": 1}, {"from": 3027, "to": 20163, "width": 1}, {"from": 3027, "to": 26351, "width": 1}, {"from": 4304, "to": 25801, "width": 1}, {"from": 4304, "to": 30227, "width": 1}, {"from": 25801, "to": 7440, "width": 1}, {"from": 25801, "to": 17838, "width": 1}, {"from": 30227, "to": 29532, "width": 1}, {"from": 5330, "to": 21314, "width": 1}, {"from": 21314, "to": 35478, "width": 1}, {"from": 5535, "to": 19710, "width": 1}, {"from": 5535, "to": 24809, "width": 1}, {"from": 5535, "to": 26802, "width": 1}, {"from": 5535, "to": 34072, "width": 1}, {"from": 19710, "to": 32614, "width": 1}, {"from": 6576, "to": 26351, "width": 1}, {"from": 6694, "to": 7180, "width": 1}, {"from": 6694, "to": 17845, "width": 1}, {"from": 6694, "to": 18674, "width": 1}, {"from": 6694, "to": 26847, "width": 1}, {"from": 7097, "to": 9813, "width": 1}, {"from": 7097, "to": 38119, "width": 1}, {"from": 7440, "to": 5330, "width": 1}, {"from": 7800, "to": 26935, "width": 1}, {"from": 7821, "to": 12345, "width": 1}, {"from": 12345, "to": 36547, "width": 1}, {"from": 7835, "to": 19699, "width": 1}, {"from": 19699, "to": 2852, "width": 1}, {"from": 19699, "to": 10237, "width": 1}, {"from": 19699, "to": 21128, "width": 1}, {"from": 19699, "to": 28126, "width": 1}, {"from": 19699, "to": 31393, "width": 1}, {"from": 19699, "to": 35392, "width": 1}, {"from": 19699, "to": 35460, "width": 1}, {"from": 19699, "to": 39498, "width": 1}, {"from": 8474, "to": 27210, "width": 1}, {"from": 8474, "to": 9534, "width": 1}, {"from": 8851, "to": 23363, "width": 1}, {"from": 9534, "to": 8611, "width": 1}, {"from": 9534, "to": 10522, "width": 1}, {"from": 9534, "to": 16779, "width": 1}, {"from": 9534, "to": 17380, "width": 1}, {"from": 9534, "to": 24592, "width": 1}, {"from": 10522, "to": 40456, "width": 1}, {"from": 16779, "to": 1515, "width": 1}, {"from": 16779, "to": 3969, "width": 1}, {"from": 16779, "to": 30098, "width": 1}, {"from": 24592, "to": 29502, "width": 1}, {"from": 10277, "to": 7097, "width": 1}, {"from": 10811, "to": 36465, "width": 1}, {"from": 11279, "to": 26351, "width": 1}, {"from": 11279, "to": 39689, "width": 1}, {"from": 11507, "to": 12978, "width": 1}, {"from": 12978, "to": 26298, "width": 1}, {"from": 11696, "to": 12345, "width": 1}, {"from": 12005, "to": 10783, "width": 1}, {"from": 12253, "to": 33125, "width": 1}, {"from": 12253, "to": 40182, "width": 1}, {"from": 12993, "to": 19340, "width": 1}, {"from": 13585, "to": 11314, "width": 1}, {"from": 14060, "to": 26351, "width": 1}, {"from": 14414, "to": 23253, "width": 1}, {"from": 15776, "to": 18515, "width": 1}, {"from": 18515, "to": 32904, "width": 1}, {"from": 15811, "to": 18303, "width": 1}, {"from": 16559, "to": 3013, "width": 1}, {"from": 16559, "to": 4304, "width": 1}, {"from": 16559, "to": 15776, "width": 1}, {"from": 16559, "to": 16623, "width": 1}, {"from": 16559, "to": 24562, "width": 1}, {"from": 16559, "to": 27191, "width": 1}, {"from": 16559, "to": 31932, "width": 1}, {"from": 16559, "to": 34073, "width": 1}, {"from": 16559, "to": 33833, "width": 1}, {"from": 16623, "to": 4417, "width": 1}, {"from": 24562, "to": 19779, "width": 1}, {"from": 24562, "to": 19180, "width": 1}, {"from": 27191, "to": 1455, "width": 1}, {"from": 31932, "to": 3969, "width": 1}, {"from": 31932, "to": 10204, "width": 1}, {"from": 31932, "to": 11804, "width": 1}, {"from": 31932, "to": 12005, "width": 1}, {"from": 31932, "to": 12253, "width": 1}, {"from": 31932, "to": 12993, "width": 1}, {"from": 31932, "to": 29502, "width": 1}, {"from": 31932, "to": 30098, "width": 1}, {"from": 31932, "to": 32405, "width": 1}, {"from": 31932, "to": 34603, "width": 1}, {"from": 31932, "to": 38004, "width": 1}, {"from": 31932, "to": 38456, "width": 1}, {"from": 34073, "to": 1193, "width": 1}, {"from": 34073, "to": 2390, "width": 1}, {"from": 34073, "to": 5263, "width": 1}, {"from": 34073, "to": 7440, "width": 1}, {"from": 34073, "to": 8474, "width": 1}, {"from": 34073, "to": 8611, "width": 1}, {"from": 34073, "to": 10035, "width": 1}, {"from": 34073, "to": 10522, "width": 1}, {"from": 34073, "to": 11911, "width": 1}, {"from": 34073, "to": 16779, "width": 1}, {"from": 34073, "to": 17380, "width": 1}, {"from": 34073, "to": 17838, "width": 1}, {"from": 34073, "to": 24592, "width": 1}, {"from": 34073, "to": 29532, "width": 1}, {"from": 34073, "to": 30572, "width": 1}, {"from": 17663, "to": 1360, "width": 1}, {"from": 17663, "to": 27150, "width": 1}, {"from": 17838, "to": 10204, "width": 1}, {"from": 17838, "to": 38456, "width": 1}, {"from": 18004, "to": 18370, "width": 1}, {"from": 18406, "to": 40217, "width": 1}, {"from": 18448, "to": 36993, "width": 1}, {"from": 19944, "to": 12345, "width": 1}, {"from": 19997, "to": 24230, "width": 1}, {"from": 20612, "to": 35677, "width": 1}, {"from": 20612, "to": 37917, "width": 1}, {"from": 20612, "to": 38474, "width": 1}, {"from": 35478, "to": 19180, "width": 1}, {"from": 22483, "to": 6069, "width": 1}, {"from": 22759, "to": 25422, "width": 1}, {"from": 19779, "to": 29888, "width": 1}, {"from": 24777, "to": 2685, "width": 1}, {"from": 27304, "to": 19997, "width": 1}, {"from": 32242, "to": 33963, "width": 1}, {"from": 34273, "to": 14414, "width": 1}, {"from": 19180, "to": 36862, "width": 1}, {"from": 20590, "to": 1222, "width": 1}, {"from": 20590, "to": 1360, "width": 1}, {"from": 20590, "to": 1789, "width": 1}, {"from": 20590, "to": 2137, "width": 1}, {"from": 20590, "to": 2958, "width": 1}, {"from": 20590, "to": 3749, "width": 1}, {"from": 20590, "to": 6526, "width": 1}, {"from": 20590, "to": 6866, "width": 1}, {"from": 20590, "to": 8501, "width": 1}, {"from": 20590, "to": 8836, "width": 1}, {"from": 20590, "to": 11314, "width": 1}, {"from": 20590, "to": 12565, "width": 1}, {"from": 20590, "to": 13910, "width": 1}, {"from": 20590, "to": 16162, "width": 1}, {"from": 20590, "to": 16559, "width": 1}, {"from": 20590, "to": 18303, "width": 1}, {"from": 20590, "to": 23294, "width": 1}, {"from": 20590, "to": 23920, "width": 1}, {"from": 20590, "to": 24777, "width": 1}, {"from": 20590, "to": 24809, "width": 1}, {"from": 20590, "to": 25048, "width": 1}, {"from": 20590, "to": 27150, "width": 1}, {"from": 20590, "to": 28331, "width": 1}, {"from": 20590, "to": 29027, "width": 1}, {"from": 20590, "to": 29740, "width": 1}, {"from": 20590, "to": 31985, "width": 1}, {"from": 20590, "to": 34877, "width": 1}, {"from": 20590, "to": 36119, "width": 1}, {"from": 20590, "to": 36465, "width": 1}, {"from": 20590, "to": 36557, "width": 1}, {"from": 20590, "to": 36666, "width": 1}, {"from": 20590, "to": 39400, "width": 1}, {"from": 36085, "to": 18184, "width": 1}, {"from": 37244, "to": 38425, "width": 1}, {"from": 37708, "to": 35272, "width": 1}, {"from": 37876, "to": 9813, "width": 1}, {"from": 38808, "to": 28745, "width": 1}, {"from": 39150, "to": 19340, "width": 1}, {"from": 20492, "to": 1495, "width": 1}, {"from": 20492, "to": 4786, "width": 1}, {"from": 20492, "to": 13063, "width": 1}, {"from": 20492, "to": 15040, "width": 1}, {"from": 20492, "to": 20257, "width": 1}, {"from": 20492, "to": 21587, "width": 1}, {"from": 20492, "to": 26072, "width": 1}, {"from": 20492, "to": 32773, "width": 1}, {"from": 20492, "to": 34280, "width": 1}, {"from": 20492, "to": 34773, "width": 1}, {"from": 20492, "to": 35432, "width": 1}, {"from": 20492, "to": 36234, "width": 1}, {"from": 20492, "to": 37860, "width": 1}, {"from": 20492, "to": 38105, "width": 1}, {"from": 20492, "to": 38523, "width": 1}, {"from": 20492, "to": 38577, "width": 1}, {"from": 20492, "to": 38594, "width": 1}, {"from": 20492, "to": 38990, "width": 1}, {"from": 20492, "to": 39420, "width": 1}, {"from": 39471, "to": 1829, "width": 1}, {"from": 39471, "to": 8680, "width": 1}, {"from": 39471, "to": 11160, "width": 1}, {"from": 39471, "to": 12550, "width": 1}, {"from": 39471, "to": 17398, "width": 1}, {"from": 39471, "to": 18370, "width": 1}, {"from": 39471, "to": 23863, "width": 1}, {"from": 39471, "to": 29863, "width": 1}, {"from": 39471, "to": 38908, "width": 1}, {"from": 1829, "to": 16364, "width": 1}, {"from": 5249, "to": 2471, "width": 1}, {"from": 5249, "to": 5977, "width": 1}, {"from": 5249, "to": 10221, "width": 1}, {"from": 5249, "to": 10391, "width": 1}, {"from": 5249, "to": 14951, "width": 1}, {"from": 5249, "to": 16231, "width": 1}, {"from": 5249, "to": 16392, "width": 1}, {"from": 5249, "to": 16623, "width": 1}, {"from": 5249, "to": 22050, "width": 1}, {"from": 5249, "to": 22745, "width": 1}, {"from": 5249, "to": 38506, "width": 1}, {"from": 5249, "to": 38568, "width": 1}, {"from": 5249, "to": 38892, "width": 1}, {"from": 5249, "to": 39578, "width": 1}, {"from": 5249, "to": 39721, "width": 1}, {"from": 30133, "to": 3863, "width": 1}, {"from": 37827, "to": 5123, "width": 1}, {"from": 37827, "to": 10330, "width": 1}, {"from": 37827, "to": 22115, "width": 1}, {"from": 37827, "to": 26962, "width": 1}, {"from": 29774, "to": 6322, "width": 1}, {"from": 29774, "to": 20840, "width": 1}, {"from": 29774, "to": 23610, "width": 1}, {"from": 29774, "to": 23984, "width": 1}, {"from": 29774, "to": 25020, "width": 1}, {"from": 29774, "to": 27215, "width": 1}, {"from": 29774, "to": 29415, "width": 1}, {"from": 29774, "to": 29614, "width": 1}, {"from": 29774, "to": 32576, "width": 1}, {"from": 29774, "to": 37011, "width": 1}, {"from": 36083, "to": 6407, "width": 1}, {"from": 36083, "to": 35732, "width": 1}, {"from": 7103, "to": 8490, "width": 1}, {"from": 7103, "to": 19699, "width": 1}, {"from": 37674, "to": 9799, "width": 1}, {"from": 11160, "to": 28310, "width": 1}, {"from": 39444, "to": 16489, "width": 1}, {"from": 20741, "to": 19652, "width": 1}, {"from": 35392, "to": 19779, "width": 1}, {"from": 35392, "to": 20607, "width": 1}, {"from": 35392, "to": 28649, "width": 1}, {"from": 35392, "to": 30324, "width": 1}, {"from": 20147, "to": 22483, "width": 1}, {"from": 20147, "to": 34073, "width": 1}, {"from": 8082, "to": 25180, "width": 1}, {"from": 8082, "to": 26696, "width": 1}, {"from": 29122, "to": 26935, "width": 1}, {"from": 18575, "to": 27521, "width": 1}, {"from": 30519, "to": 31572, "width": 1}, {"from": 22153, "to": 31649, "width": 1}, {"from": 34154, "to": 32616, "width": 1}, {"from": 2171, "to": 33848, "width": 1}, {"from": 2171, "to": 34170, "width": 1}, {"from": 2171, "to": 36241, "width": 1}, {"from": 2373, "to": 34051, "width": 1}, {"from": 40100, "to": 35302, "width": 1}, {"from": 27775, "to": 39150, "width": 1}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+                      network.on("stabilizationProgress", function(params) {
+                          document.getElementById('loadingBar').removeAttribute("style");
+                          var maxWidth = 496;
+                          var minWidth = 20;
+                          var widthFactor = params.iterations/params.total;
+                          var width = Math.max(minWidth,maxWidth * widthFactor);
+                          document.getElementById('bar').style.width = width + 'px';
+                          document.getElementById('text').innerHTML = Math.round(widthFactor*100) + '%';
+                      });
+                      network.once("stabilizationIterationsDone", function() {
+                          document.getElementById('text').innerHTML = '100%';
+                          document.getElementById('bar').style.width = '496px';
+                          document.getElementById('loadingBar').style.opacity = 0;
+                          // really clean the dom element
+                          setTimeout(function () {document.getElementById('loadingBar').style.display = 'none';}, 500);
+                      });
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>

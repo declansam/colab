@@ -1,0 +1,85 @@
+output_dir: /scratch/oge208/Graph-Transformer/NBFNet-PyG/explanation/RAWExplainer/
+
+dataset:
+  class: FB15k-237
+  root:  /scratch/oge208/Graph-Transformer/NBFNet-PyG/datasets/knowledge_graphs/
+
+wandb:
+  use: {{use_wandb}}
+  entity: "team_ryoji"
+  project: SampleX-FB15k-237
+  name: RAWExplainer-Inf-Ola1_1
+
+model:
+  class: NBFNet
+  input_dim: 32
+  hidden_dims: [32, 32, 32, 32, 32, 32]
+  message_func: distmult
+  aggregate_func: pna
+  short_cut: yes
+  layer_norm: yes
+  dependent: yes
+  remove_one_hop: yes
+  use_pyg_propagation: yes
+
+explainer:
+  class: RAWExplainer
+  size_reg: 3
+  ent_reg: 5
+  temp_start: 5
+  temp_end: 5
+  sample_bias: 0.5
+  rel_emb: yes
+  num_mlp_layer: 2
+  use_default_aggr: no
+  topk_tails: 3
+  ego_network: no
+  # Random Walks
+  random_walk_loss: yes
+  adj_aggr: mean
+  teleport_prob: 0.25
+  rw_topk_node: 300
+  reg_loss_inside: 2
+  reg_loss_outside: 1
+  use_teleport_adj: yes
+  threshold: {{th}}
+  # Path Loss
+  with_path_loss: no
+  reg_path_loss: 3
+  max_path_length: 3
+  # Optims
+  factual: yes
+  counter_factual: no
+  expl_gnn_model: no
+
+explainer_eval: # the evaluation of the explainers
+  eval_mask_type: hard_edge_mask_top_k
+  hard_edge_mask_top_k: [25, 50, 75, 100, 300, 500, 1000]
+  eval_type: [factual_eval]
+
+task:
+  num_negative: 32
+  strict_negative: yes
+  adversarial_temperature: 0.5
+  metric: [mr, mrr, hits@1, hits@3, hits@10, inclusion, num_edges, num_nodes]
+
+optimizer:
+  class: Adam
+  lr: 0.00025
+
+train:
+  gpus: {{gpus}}
+  batch_size: 4
+  num_epoch: 0
+  log_interval: 100
+  num_workers: 4
+  step: 1
+  checkpoint_best: yes
+  train_on_val: yes
+
+checkpoint: /scratch/oge208/Graph-Transformer/NBFNet-PyG/checkpoint/explain/fb15k237_dist_eval.pth
+eval_checkpoint: /scratch/oge208/Graph-Transformer/NBFNet-PyG/checkpoint/explain/fb15k237_dist_eval.pth
+explainer_checkpoint: /scratch/oge208/Graph-Transformer/NBFNet-PyG/explanation/RAWExplainer/NBFNet/FB15k-237/2025-03-13-07-21-01/model_epoch_9.pth
+
+save_explanation: yes
+valid_walltime: 20

@@ -1,0 +1,83 @@
+output_dir: /scratch/oge208/Graph-Transformer/NBFNet-PyG/explanation/RAWExplainer/
+
+dataset:
+  class: WN18RR
+  root:  /scratch/oge208/Graph-Transformer/NBFNet-PyG/datasets/knowledge_graphs/
+
+wandb:
+  use: yes
+  entity: "team_ryoji"
+  project: SampleX-WN18RR
+  name: RAWExplainer-Hyp-Ola2
+
+model:
+  class: NBFNet
+  input_dim: 32
+  hidden_dims: [32, 32, 32, 32, 32, 32]
+  message_func: distmult
+  aggregate_func: pna
+  short_cut: yes
+  layer_norm: yes
+  dependent: no
+  use_pyg_propagation: yes
+
+explainer:
+  class: RAWExplainer
+  size_reg: 4
+  ent_reg: 2
+  temp_start: 2
+  temp_end: 2
+  sample_bias: 0.4
+  rel_emb: yes
+  num_mlp_layer: 2
+  use_default_aggr: no
+  topk_tails: 2
+  ego_network: no
+  joint_training: no
+  # Random Walks
+  random_walk_loss: yes
+  adj_aggr: sum
+  teleport_prob: 0.2
+  rw_topk_node: 500
+  reg_loss_inside: 1
+  reg_loss_outside: 0.5
+  use_teleport_adj: yes
+  # Path Loss
+  with_path_loss: no
+  reg_path_loss: 3
+  max_path_length: 3
+  # Optims
+  factual: yes
+  counter_factual: no
+  expl_gnn_model: no
+
+explainer_eval: # the evaluation of the explainers
+  eval_mask_type: hard_edge_mask_top_k
+  hard_edge_mask_top_k: [10, 25, 50, 75, 100, 300, 500, 1000]
+  eval_type: [factual_eval]
+
+task:
+  num_negative: 32
+  strict_negative: yes
+  adversarial_temperature: 1
+  metric: [mr, mrr, hits@1, hits@3, hits@10, inclusion, num_edges, num_nodes]
+
+optimizer:
+  class: Adam
+  lr: 0.00005
+
+train:
+  gpus: [0,1,2,3]
+  batch_size: 4
+  num_epoch: 10
+  log_interval: 100
+  num_workers: 4
+  step: 1
+  checkpoint_best: yes
+  train_on_val: yes
+
+checkpoint: /scratch/oge208/Graph-Transformer/NBFNet-PyG/checkpoint/explain/wn18rr_dist_eval.pth
+eval_checkpoint: /scratch/oge208/Graph-Transformer/NBFNet-PyG/checkpoint/explain/wn18rr_dist_eval.pth
+
+save_explanation: yes
+valid_walltime: 20

@@ -1,0 +1,33 @@
+11:43:13   Random seed: 1024
+11:43:13   Config file: config/nbfnet/wn18rr-0b.yaml
+11:43:13   Process ID: 2002482
+11:43:13   {'dataset': {'class': 'WN18RR',
+             'root': '/scratch/sl9030/gml/Graph-Transformer/NBFNet-PyG/datasets/knowledge_graphs/'},
+ 'eval': {'eval_on_edge_drop': True,
+          'eval_on_train': False,
+          'keep_ground_truth': False,
+          'randomized_edge_drop': [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5],
+          'remove_ground_truth': False},
+ 'model': {'aggregate_func': 'pna',
+           'class': 'NBFNet',
+           'dependent': False,
+           'hidden_dims': [32, 32, 32, 32, 32, 32],
+           'input_dim': 32,
+           'layer_norm': True,
+           'message_func': 'distmult',
+           'randomized_edge_drop': 0.0,
+           'short_cut': True,
+           'use_pyg_propagation': True},
+ 'optimizer': {'class': 'Adam', 'lr': 0.005},
+ 'output_dir': '/scratch/sl9030/gml/Graph-Transformer/NBFNet-PyG/experiments/',
+ 'task': {'adversarial_temperature': 1,
+          'metric': ['mr', 'mrr', 'hits@1', 'hits@3', 'hits@10'],
+          'num_negative': 32,
+          'strict_negative': True},
+ 'train': {'batch_size': 16, 'gpus': [0], 'log_interval': 100, 'num_epoch': 20},
+ 'wandb': {'entity': 'team_ryoji',
+           'name': 'NBFNet-0b',
+           'project': 'SampleX-WN18RR',
+           'use': False}}
+11:43:14   WN18RR dataset
+11:43:14   #train: 86835, #valid: 3034, #test: 3134

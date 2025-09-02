@@ -1,0 +1,59 @@
+output_dir: /scratch/dd115/Graph-Transformer/NBFNet-PyG/RelPGExplainer/
+
+dataset:
+  class: FB15k-237
+  root: /scratch/dd115/Graph-Transformer/NBFNet-PyG/datasets/knowledge_graphs/
+
+wandb:
+  use: yes
+  entity: "team_ryoji"
+  project: SampleX-FB15k-237
+  name: RelPGExplainer-Hypersearch-JubailDD
+
+model:
+  class: NBFNet
+  input_dim: 32
+  hidden_dims: [32, 32, 32, 32, 32, 32]
+  message_func: distmult
+  aggregate_func: pna
+  short_cut: yes
+  layer_norm: yes
+  dependent: yes
+  remove_one_hop: yes
+  use_pyg_propagation: yes
+
+explainer:
+  class: RelPGExplainer
+  size_reg: 1
+  ent_reg: 1
+  temp_start: 2
+  temp_end: 1
+  sample_bias: 0.5
+  rel_emb: yes
+  num_mlp_layer: 3
+  use_default_aggr: yes
+  topk_tails: 1
+  random_walk_loss: no
+  
+explainer_eval: # the evaluation of the explainers
+  eval_mask_type: hard_edge_mask_top_k
+  hard_edge_mask_threshold: 0.5
+  hard_edge_mask_top_k: [100, 300, 500]
+
+task:
+  num_negative: 32
+  strict_negative: yes
+  adversarial_temperature: 0.5
+  metric: [mr, mrr, hits@1, hits@3, hits@10, hits@50, hits@100, inclusion, num_edges, num_nodes]
+
+optimizer:
+  class: Adam
+  lr: 5.0e-3
+
+train:
+  gpus: [0,1]
+  batch_size: 16
+  num_epoch: 2
+  log_interval: 100
+
+checkpoint: /scratch/dd115/Graph-Transformer/NBFNet-PyG/checkpoint/fb15k237_02b.pth
