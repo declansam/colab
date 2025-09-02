@@ -64,10 +64,30 @@ def train_and_validate(
     run = util.wandb_setup(cfg, rank)
 
     # * Data Loading *
+    '''
+    # Example with 5 training triples
+    train_data.target_edge_index = torch.tensor([
+        [0, 1, 2, 3, 4],  # Head entities (source nodes)
+        [5, 6, 7, 8, 9]   # Tail entities (target nodes)
+    ])
+
+    train_data.target_edge_type = torch.tensor([0, 1, 2, 0, 1])  # Relation types
+
+    so results:
+    torch.tensor([
+        [0, 1, 2, 3, 4],  # Head entities
+        [5, 6, 7, 8, 9],  # Tail entities  
+        [0, 1, 2, 0, 1]   # Relations
+    ])
+    '''
+
+    # [num_edges, 3]
     train_triplets = torch.cat(
         [train_data.target_edge_index, train_data.target_edge_type.unsqueeze(0)]
     ).t()
+
     # train_triplets = train_triplets[:30]
+    # dividing data portion among GPUs
     sampler = torch_data.DistributedSampler(train_triplets, world_size, rank)
     train_loader = torch_data.DataLoader(
         train_triplets, cfg.train.batch_size, sampler=sampler
@@ -89,6 +109,7 @@ def train_and_validate(
     best_epoch = -1
 
     # * Miscellaneous *
+    #$ Determine step = frequency of validation
     if hasattr(cfg.train, "step"):
         step = cfg.train.step
     else:
@@ -113,20 +134,52 @@ def train_and_validate(
         losses = []
 
         for batch in train_loader:
+            
             # * Mode Setup *
+            #$ Determine the mode for prediction (head or tail)
+            #$ mode[i] = 1 means tail prediction, 0 means head prediction
+            #$ tail prediction; (h, r, ?)
             batch_size = len(batch)
             if is_synthetic:
                 # for synthetic data, we do tail batch only
                 mode = torch.ones((batch_size,), dtype=torch.bool, device=batch.device)
+
+            #$ head prediction; (?, r, t)
+            #$ start by 0 i.e. head prediction for all
+            #$ BUT, modify the first half to be tail prediction by setting them to 1
+            #$ This mixed mode is used for balanced training
             else:
                 mode = torch.zeros((batch_size,), dtype=torch.bool, device=batch.device)
                 # first half will be tail batch, and the second half will be head batch
                 mode[: batch_size // 2] = 1
+            #! mode = [batch_size]
 
             # * Data Setup *
             # create the central nodes (could be used for RW)
+            #$ pick batch[:, 0] if mode = 1, else pick batch[:, 1]
+            #$ heads signify the nodes to be used for RW
+            #! heads = [batch_size], central_nodes = [batch_size, 1]
             heads = torch.where(mode, batch[:, 0], batch[:, 1])
             central_nodes = heads.unsqueeze(1)
+
+
+            '''
+            Query 0 (Tail Prediction):
+                Central Node: 0 (dog)
+                Task: (dog, hypernym, ?) → predict cat
+
+                    0 (dog) ──hypernym──> ? 
+                    ↑
+                Central Node (starting point for GNN)
+
+            Query 4 (Head Prediction):  
+                Central Node: 9 (mammal)
+                Task: (?, hypernym, mammal) → predict lion
+
+                    ? ──hypernym──> 9 (mammal)
+                                    ↑
+                                Central Node (starting point for GNN)
+            '''
 
             # start = time.time()
             if train_on_subgraph:
