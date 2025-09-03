@@ -105,25 +105,43 @@ def prepare_full_data(
         )
 
     device = data.edge_index.device
+    
     # Necessary copy to not modify the split data
     s_data = copy.copy(data)
+
+    # store the original edge index and edge type
     s_data.original_edge_index = data.edge_index
     s_data.original_edge_type = data.edge_type
+    
+    # repeat the edge index and edge type for each batch
     s_data.edge_index = data.edge_index.repeat(1, batch_size)
     s_data.edge_type = data.edge_type.repeat(batch_size)
+
+    # Build node-level bookkeeping
+    # node ids repeat for each batch
+    # Shape = [num_nodes * batch_size]
     s_data.node_id = torch.arange(data.num_nodes, device=device).repeat(batch_size)
+
+    # For each node, record which batch copy it belongs to.
     s_data.node_batch = torch.arange(batch_size, device=device).repeat_interleave(
         data.num_nodes
     )
+
+    # Build edge-level bookkeeping
     s_data.edge_batch = torch.arange(batch_size, device=device).repeat_interleave(
         data.edge_index.size(1)
     )
+
+    # Number of nodes and edges per batch copy
+    # For each copy, store the number of nodes/edges (same as original).
     s_data.subgraph_num_nodes = torch.tensor([data.num_nodes], device=device).repeat(
         batch_size
     )
     s_data.subgraph_num_edges = torch.tensor(
         [data.edge_index.size(1)], device=device
     ).repeat(batch_size)
+
+    # For each copy, store the max number of nodes/edges across all queries in that copy.
     s_data.max_num_nodes = data.num_nodes
     s_data.central_node_index = central_nodes
 

@@ -228,6 +228,8 @@ def train_and_validate(
 
             else:
                 # create negative samples
+                # batch prev: [batch_size, 3]
+                # batch now:  [batch_size, num_negatives + 1, 3]  (num_negatives + 1 because of the positive sample)
                 batch = tasks.negative_sampling(
                     train_data,
                     batch,
@@ -236,10 +238,53 @@ def train_and_validate(
                     is_synthetic=is_synthetic,
                     mode=mode,
                 )
+
                 # convert the batch to tail prediction
+                # (h, t, r) -> (t, r, r') where r' = r + num_relation // 2 (since original tail prediction relation are unchanged)
+                # shape still: [batch_size, num_negatives + 1, 3]
                 batch = tasks.conversion_to_tail_prediction(
                     batch, model.num_relation, mode
                 )
+
+                # Graph data replicated for batch processing
+                # Take my full graph, make batch_size identical copies, and keep track of which node/edge belongs to which copy.
+                # Returns Data() object that contains:
+                # - The original graph replicated batch_size times.
+                # - Which nodes belong to which batch copy.
+                # - Which edges belong to which batch copy.
+                # - Central nodes for each copy.
+                # Shape stays the same for each copy - we don’t shrink or expand the graph, we just repeat it.
+                '''
+                INPUT:
+                    edge_index = [[0,1,2],
+                                [1,2,0]]        # [2, num_edges=3]
+                    edge_type  = [0,1,2]          # [num_edges=3]
+                    num_nodes  = 3
+                    batch_size = 2
+
+                OUTPUT:
+                    s_data.edge_index =
+                    [[0,1,2,0,1,2],
+                    [1,2,0,1,2,0]]               # [2, num_edges * batch_size] = [2,6]
+
+                    s_data.edge_type =
+                    [0,1,2,0,1,2]                # [6]
+
+                    s_data.node_id =
+                    [0,1,2,0,1,2]                # [num_nodes * batch_size] = [6]
+
+                    s_data.node_batch =
+                    [0,0,0,1,1,1]                # each node belongs to graph 0 or 1
+
+                    s_data.edge_batch =
+                    [0,0,0,1,1,1]                # each edge belongs to graph 0 or 1
+
+                    s_data.subgraph_num_nodes =
+                    [3,3]                        # each graph copy has 3 nodes
+
+                    s_data.subgraph_num_edges =
+                    [3,3]                        # each graph copy has 3 edges
+                '''
                 data = data_util.prepare_full_data(
                     train_data,
                     batch_size,
@@ -247,9 +292,40 @@ def train_and_validate(
                     hops=model.max_dropout_distance,
                     distance_dropout=model.distance_dropout,
                 )
+
+            # Batched graph data optimized for parallel processing
+            # Rearranges the graph data so that NBFNet can process different graphs at the same time.
+            '''
+            From above, s_data has:
+                edge_index = [2, 6] (flat)
+                edge_batch = [0,0,0,1,1,1]
+                subgraph_num_edges = [3,3]
+
+            OUTPUT:
+            data.batched_edge_index =
+                                        [[[0,1,2],
+                                        [0,1,2]],         # shape [2, batch_size=2, max_num_edges=3]
+                                        [[1,2,0],
+                                        [1,2,0]]]
+
+                                        data.batched_edge_type =
+                                        [[0,1,2],
+                                        [0,1,2]]           # [batch_size=2, max_num_edges=3]
+
+                                        data.edge_filter =
+                                        [[1,1,1],
+                                        [1,1,1]]           # 1 = valid edge, 0 = padded edge
+
+            '''
             data = data_util.create_batched_data(data)  # create the batched data
 
             # do masking, random walk if applicable
+            # Before masking: Graph has all original edges including direct paths from heads to tails
+            # After masking: Direct edges like (head_0, relation_0, tail_0) are removed from the graph
+            #                Model must find alternative paths like head_0 → intermediate_node → tail_0
+            #                Forces learning of compositional reasoning patterns
+            # Insight: The masking doesn't change your batch tensor [16, 33, 3]
+            # it modifies the underlying graph structure that the model will use to score those 16×33 candidate triples.
             data = model.masking(data, batch, randomwalker)
             # end = time.time()
             # if util.get_rank() == 0:

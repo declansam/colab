@@ -81,7 +81,12 @@ def negative_sampling(
         is_synthetic: whether the dataset is synthetic
         mode: the mode of evaluation for each query
     """
+
+    # batch.shape [batch_size, 3] so batch_size is the first dimension
     batch_size = len(batch)
+
+    # pos_h_index, pos_t_index, pos_r_index are the heads, tails, and relations of the positive triples
+    # shape: [batch_size]
     pos_h_index, pos_t_index, pos_r_index = batch.t()
 
     if mode is None:
@@ -98,24 +103,39 @@ def negative_sampling(
 
     # strict negative sampling vs random negative sampling
     if strict:
+
+        # t_mask: For each (h, r) in the batch, marks which nodes are valid negative tails.
+        # h_mask: For each (t, r) in the batch, marks which nodes are valid negative heads.
+        # shape: [batch_size, data.num_nodes]
+        #> essentially: for each batch, creates a mask (T = valid -ve) for all the nodes in the graph, that are valid negative tails/ heads
         t_mask, h_mask = strict_negative_mask(data, batch)
+        
+        # Tail corruption
+        # t_mask: get mask only for the tail prediction queries (mode = True)
+        # t_mask.shape: [batch_size/2, data.num_nodes] (since the first half of the batch is tail prediction queries)
         t_mask = t_mask[mode]
-        neg_t_candidate = t_mask.nonzero()[:, 1]
-        num_t_candidate = t_mask.sum(dim=-1)
+        neg_t_candidate = t_mask.nonzero()[:, 1]        # get valid candidate indices
+        num_t_candidate = t_mask.sum(dim=-1)            # count the number of valid candidate indices
+        
         # draw samples for negative tails
+        #> essentially: for each batch, draws random samples from the valid negative tails
         rand = torch.rand(len(t_mask), num_negative, device=batch.device)
         index = (rand * num_t_candidate.unsqueeze(-1)).long()
         index = index + (num_t_candidate.cumsum(0) - num_t_candidate).unsqueeze(-1)
         neg_t_index = neg_t_candidate[index]
 
+        # Head corruption
         h_mask = h_mask[~mode]
         neg_h_candidate = h_mask.nonzero()[:, 1]
         num_h_candidate = h_mask.sum(dim=-1)
+        
         # draw samples for negative heads
         rand = torch.rand(len(h_mask), num_negative, device=batch.device)
         index = (rand * num_h_candidate.unsqueeze(-1)).long()
         index = index + (num_h_candidate.cumsum(0) - num_h_candidate).unsqueeze(-1)
         neg_h_index = neg_h_candidate[index]
+    
+    # Random negative sampling of node IDs (no filtering)
     else:
         neg_index = torch.randint(
             data.num_nodes, (batch_size, num_negative), device=batch.device
@@ -297,13 +317,20 @@ def strict_negative_mask(
     pos_h_index, pos_t_index, pos_r_index = batch.t()
 
     # part I: sample hard negative tails
-    # edge index of all (head, relation) edges from the underlying graph
+    # edge index of all (head, relation) edges from the underlying graph (i.e. full graph)
     edge_index = torch.stack([data.edge_index[0], data.edge_type])
-    # edge index of current batch (head, relation) for which we will sample negatives
+    # edge index of current batch (head, relation) for which we will sample negatives (i.e. current batch)
     query_index = torch.stack([pos_h_index, pos_r_index])
-    # search for all true tails for the given (h, r) batch
+    
+    # search for all true tails for the given query (h, r) batch in the graph
+    # edge_id: the indices of the found edges
+    # num_t_truth[i]: the number of true tails for each query i in the batch
+    # num_t_truth.shape: [batch_size]
     edge_id, num_t_truth = edge_match(edge_index, query_index)
+    
     # build an index from the found edges
+    # t_truth_index: the indices of the found true tails
+    # t_truth_index.shape: shape of edge_id
     t_truth_index = data.edge_index[1, edge_id]
     sample_id = torch.arange(len(num_t_truth), device=batch.device).repeat_interleave(
         num_t_truth
