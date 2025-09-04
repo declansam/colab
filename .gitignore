@@ -1,0 +1,23 @@
+
+# vs code
+.vscode/
+**/.vscode/
+
+# macos native files
+.DS_Store
+.DS_Store?
+**/.DS_Store
+**/.DS_Store?
+
+# env
+.env
+**/.env
+
+# Python
+**/.ipynb_checkpoints/**
+**/__pycache__/**
+**Checkpoints/**
+
+# JS
+**/node_modules/
+node_modules/

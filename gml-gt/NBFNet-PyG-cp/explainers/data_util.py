@@ -114,6 +114,11 @@ def prepare_full_data(
     s_data.original_edge_type = data.edge_type
     
     # repeat the edge index and edge type for each batch
+    '''
+    s_data.edge_index = data.edge_index.repeat(1, batch_size)  # Repeat edges
+    s_data.edge_type = data.edge_type.repeat(batch_size)       # Repeat edge types
+    s_data.node_batch = torch.arange(batch_size).repeat_interleave(data.num_nodes)  # [0,0,...,1,1,...,2,2,...]
+    '''
     s_data.edge_index = data.edge_index.repeat(1, batch_size)
     s_data.edge_type = data.edge_type.repeat(batch_size)
 

@@ -284,6 +284,13 @@ def train_and_validate(
 
                     s_data.subgraph_num_edges =
                     [3,3]                        # each graph copy has 3 edges
+
+                # Original: edge_index [2, E], edge_type [E]
+                # After: edge_index [2, E x batch_size], edge_type [Exbatch_size]
+
+                # With config/nbfnet/wn18rr-0b.yaml, 
+                    train_data.edge_index.shape = [2, 173670]
+                    data.edge_index.shape = [2, 173670 * 16] = [2, 2778720]             <-- here we have 16 copies of the graph
                 '''
                 data = data_util.prepare_full_data(
                     train_data,
@@ -295,6 +302,7 @@ def train_and_validate(
 
             # Batched graph data optimized for parallel processing
             # Rearranges the graph data so that NBFNet can process different graphs at the same time.
+            # Purpose: This function converts the replicated data into a 3D tensor format that NBFNet can efficiently process in parallel.
             '''
             From above, s_data has:
                 edge_index = [2, 6] (flat)
@@ -330,6 +338,46 @@ def train_and_validate(
             # end = time.time()
             # if util.get_rank() == 0:
             #     logger.warning(f"* Data Prep Took {(end-start):.2f}s*")
+            
+            '''
+            Understanding data and batch variables:
+            
+            * What batch contains:
+                Shape: (batch_size, 1 + num_negative, 3)
+                Content: Each query with positive + negative candidates
+                Format: [head, tail_candidate, relation] (all converted to tail prediction)
+
+                # Example with batch_size=4, num_negative=64
+                # Format: [head, tail_candidate, relation]
+                batch[0] = [[0, 1, 2],      # positive: entity 0 → entity 1 via relation 2
+                        [0, 100, 2],        # negative: entity 0 → entity 100 via relation 2  
+                        [0, 200, 2],        # negative: entity 0 → entity 200 via relation 2
+                        ...
+                        [0, 999, 2]]        # negative: entity 0 → entity 999 via relation 2
+
+            * What data contains:
+                Shape: batched_edge_index: (2, batch_size, num_edges)
+                Content: Full KG replicated for each query
+                Key Point: Each query gets the IDENTICAL complete knowledge graph
+
+                Case: 
+                * 1. train_on_subgraph = False ==> Full KG replicated for each query
+                # Example: WN18RR dataset
+                        - Original KG: 40,943 entities, 93,003 edges
+                        - With batch_size=32: data contains 32 x 93,003 = 2,976,096 edges
+                        - Each query sees the ENTIRE knowledge graph
+                
+                * 2. train_on_subgraph = True ==> Subgraph replicated for each query
+                # Example: 3-hop subgraphs
+                        - Query 1: 50 nodes, 120 edges (around entity "dog")
+                        - Query 2: 73 nodes, 180 edges (around entity "car")  
+                        - Query 3: 45 nodes, 95 edges (around entity "book")
+                        - Total: 168 nodes, 395 edges (vs 40,943 nodes, 93,003 edges for full KG)
+
+            * How They Complement Each Other:
+                data provides the CONTEXT - the complete knowledge graph structure
+                batch provides the QUERIES - specific questions to answer with candidates to score
+            '''
 
             # * Forward, Loss, Backprop*
             pred = parallel_model(data, batch)
