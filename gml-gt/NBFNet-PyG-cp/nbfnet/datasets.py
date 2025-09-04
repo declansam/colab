@@ -213,43 +213,90 @@ class WordNet18RR(InMemoryDataset):
         node2id, idx = {}, 0
 
         srcs, dsts, edge_types = [], [], []
+
+        # Read the data from the raw files
+        # sefl.raw_paths is a list of paths to the raw files ["train.txt", "valid.txt", "test.txt"]
         for path in self.raw_paths:
             with open(path, "r") as f:
                 data = f.read().split()
 
+                # Split the data into source, destination, and edge type
                 src = data[::3]
                 dst = data[2::3]
                 edge_type = data[1::3]
 
+                # Create a mapping from node to index
+                # chain(src, dst) is a list of all nodes in the graph
                 for i in chain(src, dst):
                     if i not in node2id:
                         node2id[i] = idx
                         idx += 1
 
+                # Converts raw triples into integer forms
                 src = [node2id[i] for i in src]
                 dst = [node2id[i] for i in dst]
                 edge_type = [self.edge2id[i] for i in edge_type]
 
+                # Convert the data into tensors
                 srcs.append(torch.tensor(src, dtype=torch.long))
                 dsts.append(torch.tensor(dst, dtype=torch.long))
                 edge_types.append(torch.tensor(edge_type, dtype=torch.long))
 
+        # Concatenate the data from train, test and valid into a single tensor
         src = torch.cat(srcs, dim=0)
         dst = torch.cat(dsts, dim=0)
         edge_type = torch.cat(edge_types, dim=0)
 
+        ### 
+        # Create masks for train, test and valid
+        # src.size(0) is the total number of edges in the graph
+        # srcs[0].size(0) is the number of triples in the train set
+        # srcs[0] --> edge_index for train set
+        # Start with a boolean tensor of length = total number of edges, all False.
+        ###
+        
+        # Set True for edges that belong to the train set.
+        # This line sets the first srcs[0].size(0) elements of the train_mask to True. 
+        # srcs[0] is the tensor of source nodes from the train.txt file, so this marks all training edges.
         train_mask = torch.zeros(src.size(0), dtype=torch.bool)
         train_mask[: srcs[0].size(0)] = True
+        
+        # Set True for edges that belong to the validation set.
+        # This line sets the elements of val_mask to True for the edges that belong to the validation set. 
+        # It starts at the index right after the training edges and continues for a length equal to the 
+        # number of validation edges (srcs[1].size(0)).
         val_mask = torch.zeros(src.size(0), dtype=torch.bool)
         val_mask[srcs[0].size(0) : srcs[0].size(0) + srcs[1].size(0)] = True
+        
+        # Set True for edges that belong to the test set.
+        # This sets the remaining elements to True, which correspond to the edges from the test.txt file.
         test_mask = torch.zeros(src.size(0), dtype=torch.bool)
         test_mask[srcs[0].size(0) + srcs[1].size(0) :] = True
 
+        # Number of distinct nodes in the graph = highest node index + 1
         num_nodes = max(int(src.max()), int(dst.max())) + 1
+
+        # Get unique edge IDs for sorting
+        # argsort() returns the indices that would sort the array in ascending order
         perm = (num_nodes * src + dst).argsort()
 
+        ###
+        # Sorts edges lexicographically by (src, dst) to keep them in a canonical order.
+        # Reorders everything (edge_index, edge_type, masks) consistently.
+        # The sorting is done by combining the source and destination node indices into a single unique value, 
+        # and then sorting based on this value. This ensures that all edges with the same source-destination pair 
+        # are grouped together and provides a consistent, canonical ordering for the edges in the graph.
+        ###
+
+        # The perm tensor is used to reorder the src and dst tensors. 
+        # src[perm] retrieves all source nodes in the new, sorted order, and dst[perm] does the same for the destination nodes.
         edge_index = torch.stack([src[perm], dst[perm]], dim=0)
+
+        # The edge_type tensor is also reordered using the same perm tensor to ensure that each edge's type 
+        # still correctly corresponds to its source and destination.
         edge_type = edge_type[perm]
+
+        # The masks are reordered as well. 
         train_mask = train_mask[perm]
         val_mask = val_mask[perm]
         test_mask = test_mask[perm]
