@@ -286,6 +286,49 @@ class NBFNet(nn.Module):
         edge_weights = []
         layer_input = boundary
 
+        #$ When training NBFNet, we have multiple subgraphs of different sizes in a batch, 
+        #$ but GPUs need fixed-size tensors for efficient processing.
+        #$ shape: [16, 173668] <-- ( batch_size, max(data.subgraph_num_edges) )
+        '''
+        # Query 1: "What is connected to dog via hypernym?"
+        Subgraph 1: 3 edges
+        (dog → animal), (dog → mammal), (animal → creature)
+
+        # Query 2: "What is connected to car via hypernym?"  
+        Subgraph 2: 5 edges
+        (car → vehicle), (car → object), (vehicle → thing), (object → entity), (thing → concept)
+
+        # Query 3: "What is connected to bird via hypernym?"
+        Subgraph 3: 2 edges
+        (bird → animal), (animal → creature)
+
+
+
+        Subgraph sizes: [3, 5, 2]
+        Max size: 5 
+
+
+        batched_edges = [
+            # Subgraph 1: 3 real edges + 2 padding
+            [(dog,animal), (dog,mammal), (animal,creature), (0,0), (0,0)],
+            
+            # Subgraph 2: 5 real edges + 0 padding  
+            [(car,vehicle), (car,object), (vehicle,thing), (object,entity), (thing,concept)],
+            
+            # Subgraph 3: 2 real edges + 3 padding
+            [(bird,animal), (animal,creature), (0,0), (0,0), (0,0)]
+        ]
+
+        edge_filter = [
+            [True,  True,  True,  False, False],  # Subgraph 1: first 3 are real
+            [True,  True,  True,  True,  True ],  # Subgraph 2: all 5 are real
+            [True,  True,  False, False, False]   # Subgraph 3: first 2 are real
+        ]
+
+        NOTE: 
+        - edge_filter is a mask that indicates which edges are real (True) and which are padded (False).
+        - done in file: explainers/data_util.py by create_batched_data() function
+        '''
         if edge_weight is None:
             edge_weight = data.edge_filter
 
