@@ -252,19 +252,36 @@ class NBFNet(nn.Module):
         batch_size = len(r_index)
 
         # initialize queries (relation types of the given triples)
+        # i.e. simply lookup the relation embeddings for the RELATION types of the triples in the batch
+        # query.shape => (batch_size, input_dim): (16, 32)
         query = self.query(r_index)
+
+        # x.expand_as(y) => expand tensor x to the same shape as y
+        # expand_as can be done on singleton only i.e. [16, 1] -> [16, 32] BUT NOT [16, 2] -> [16, 32]
+        # h_index.unsqueeze(-1) => [16, 1]
+        # index.shape => (batch_size, input_dim): (16, 32)
         index = h_index.unsqueeze(-1).expand_as(query)
 
         # initial (boundary) condition - initialize all node states as zeros
         # by the scatter operation we put query (relation) embeddings as init features of source (index) nodes
+        # boundary.shape => (batch_size, data.num_nodes, input_dim): (16, 41105, 32)
+        # Each of the 16 queries gets its own "graph state"
+        # Each node in each graph has a 32-dimensional feature vector (initially zeros)
         boundary = torch.zeros(
             batch_size, data.max_num_nodes, self.dims[0], device=h_index.device
         )
+
+        # scatter_add_(dim, index, src)
+        # For each position in index, add values from src into self along the given dim.”
+        #$ This sets the initial state of the head nodes to be the query embedding while all other nodes remain zero. 
+        #$ This is a crucial step that localizes the message passing process to the head entities.
         boundary.scatter_add_(1, index.unsqueeze(1), query.unsqueeze(1))
         # boundary = boundary.scatter_add(1, index.unsqueeze(1), query.unsqueeze(1))
 
+        #$ size of the adjacency matrix for a single graph
         size = (data.max_num_nodes, data.max_num_nodes)
 
+        #$ list to store the hidden states of each layer and edge weights
         hiddens = []
         edge_weights = []
         layer_input = boundary
@@ -272,10 +289,17 @@ class NBFNet(nn.Module):
         if edge_weight is None:
             edge_weight = data.edge_filter
 
+        # Loop through each layer of the NBFNet (GeneralizedRelationalConv)
         for layer in self.layers:
             if separate_grad:
                 edge_weight = edge_weight.clone().requires_grad_()
+            
             # Bellman-Ford iteration, we send the original boundary condition in addition to the updated node states
+            #$ This is the message-passing step. 
+            # It calls the forward method of the current GeneralizedRelationalConv layer. 
+            # It passes the current node states (layer_input), the original query embeddings (query), the initial boundary condition (boundary), 
+            # and various graph-related tensors from the data object.
+            #  The layer then performs aggregation, updating the node representations based on messages from their neighbors.
             hidden = layer(
                 layer_input,
                 query,
@@ -288,19 +312,30 @@ class NBFNet(nn.Module):
                 data.edge_filter,
                 edge_weight,
             )
+
+            #$ residual connection here
             if self.short_cut and hidden.shape == layer_input.shape:
                 # residual connection here
                 hidden = hidden + layer_input
+
+            #$ The newly computed hidden states and edge weights are stored, and 
+            #$ layer_input is updated for the next iteration of the loop.
             hiddens.append(hidden)
             edge_weights.append(edge_weight)
             layer_input = hidden
 
         # original query (relation type) embeddings
+        #$ After the loop, the original query embeddings are prepared to be concatenated with the final node features. 
         node_query = query.unsqueeze(1).expand(
             -1, data.max_num_nodes, -1
         )  # (batch_size, num_nodes, input_dim)
+
+        #$ concatenates the hidden states from all layers (hiddens) with the node_query embeddings.
+        #$ This creates a very expressive but high-dimensional feature vector.
         if self.concat_hidden:
             output = torch.cat(hiddens + [node_query], dim=-1)
+
+        #$ Otherwise, it only uses the hidden states from the last layer (hiddens[-1]) and concatenates them with the node_query.
         else:
             output = torch.cat([hiddens[-1], node_query], dim=-1)
 
@@ -501,17 +536,25 @@ class NBFNet(nn.Module):
         shape = h_index.shape
 
         # message passing and updated node representations
+        # h_index[:, 0] is the head index of the first triple in the batch
+        # it's all the true heads in the batch
+        # from [16, 33] h_index, we are feeding [16] h_index which is the true head of the triples in the batch
+        # GOAL: Performs the core message-passing operation. 
+        # It takes the first head and relation from each batch entry and propagates information through the graph (data). 
+        # The result is a dictionary output containing the final node representations.
         output = self.bellmanford(
             data, h_index[:, 0], r_index[:, 0], edge_weight=edge_weight
         )
-
         feature = output["node_feature"]  # (batch_size, max_num_nodes, feature_dim)
+
         # some tails indicies has been marked as -1 to indicate that there are no negative tails in the ego-network
         invalid_tails = t_index == -1
         t_index = torch.where(invalid_tails, torch.zeros_like(t_index), t_index)
         index = t_index.unsqueeze(-1).expand(-1, -1, feature.shape[-1])
+        
         # extract representations of tail entities from the updated node states
         # (batch_size, num_negative + 1, feature_dim)
+        # It uses the prepared index tensor to extract the learned features for each tail candidate.
         feature = feature.gather(1, index)
 
         # probability logit for each tail node in the batch
