@@ -25,6 +25,34 @@ logger = logging.getLogger(__file__)
 
 
 class NBFNet(nn.Module):
+    '''
+    input_dim,                   # Dimension of input node features
+    hidden_dims,                 # Hidden layer dimensions (can be list or single int)
+    num_relation,                # Total number of relation types
+    message_func="distmult",     # Message function (distmult/transe)
+    aggregate_func="pna",        # Aggregation function
+    short_cut=False,             # Residual connections
+    layer_norm=False,            # Layer normalization
+    activation="relu",           # Activation function
+    concat_hidden=False,         # Concatenate all layer outputs
+    num_mlp_layer=2,             # MLP layers for final prediction
+    dependent=True,              # Whether to use dependent relations
+    remove_one_hop=False,        # Whether to dynamically remove one-hop edges from edge_index
+    num_beam=10,                 # Number of beam search for distance
+    path_topk=10,                # Top-k paths for explanation
+    get_path=False,              # Whether to get paths
+    use_pyg_propagation=True,    # Whether to use pyg propagation
+    randomized_edge_drop=0.0,    # Probability to randomly drop an edge
+    rw_dropout=False,            # Whether to do random walk dropout
+    distance_dropout=False,      # Whether to drop edges based on disance
+    max_edge_drop_prob=0.9,      # Max dropout prob an edge can have
+    max_dropout_distance=-1,     # Max distance we are considering
+    eval_dropout_distance=-1,    # Min distance of edges to be preserved for evaluation
+    eval_on_edge_drop=False,     # Whether to eval on edge drop
+    remove_ground_truth=False,   # Whether to remove ground truth
+    keep_ground_truth=False,     # Whether to keep the ground truth
+
+    '''
 
     def __init__(
         self,
@@ -59,7 +87,10 @@ class NBFNet(nn.Module):
         if not isinstance(hidden_dims, Sequence):
             hidden_dims = [hidden_dims]
 
+        # Adding an entry (input_dim) to the hidden_dims list to create the dims list
         self.dims = [input_dim] + list(hidden_dims)
+
+        # Number of relation types in the dataset
         self.num_relation = num_relation
         self.short_cut = (
             short_cut  # whether to use residual connections between GNN layers
@@ -91,6 +122,7 @@ class NBFNet(nn.Module):
         self.keep_ground_truth_control = False  # whether to keep the control
         assert use_pyg_propagation  # pyg propagation must be used to train & evaluate
 
+        # * GNN Layers *
         self.layers = nn.ModuleList()
         for i in range(len(self.dims) - 1):
             self.layers.append(
@@ -114,7 +146,11 @@ class NBFNet(nn.Module):
 
         # additional relation embedding which serves as an initial 'query' for the NBFNet forward pass
         # each layer has its own learnable relations matrix, so we send the total number of relations, too
+        # These serve as queries that initialize the Bellman-Ford iteration.
         self.query = nn.Embedding(num_relation, input_dim)
+
+        # MLP for final prediction
+        # After message passing, the final node representations are passed into an MLP to predict scores for candidate tail entities.
         self.mlp = nn.Sequential()
         mlp = []
         for i in range(num_mlp_layer - 1):
@@ -452,11 +488,16 @@ class NBFNet(nn.Module):
         return_emb: a flag to use when returning the emb, used for explainers
         degree_by_weights: whether to calculate the degree information during aggregation using edge weights
         """
+
+        # batch.shape == (batch_size, num_negative + 1, 3)
+        # now h/t/r_index.shape == (batch_size, num_negative + 1)
         h_index, t_index, r_index = batch.unbind(-1)  # (batch_size, num_triples)
+        
         # assumption: the batch has been converted to tail batch
         assert (h_index[:, [0]] == h_index).all()
         assert (r_index[:, [0]] == r_index).all()
 
+        # (batch_size, num_negative + 1)
         shape = h_index.shape
 
         # message passing and updated node representations
